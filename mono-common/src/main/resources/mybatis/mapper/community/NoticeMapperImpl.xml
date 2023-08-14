@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.community.service.NoticeMapper">
+
+    <resultMap id="baseResultMap" type="notice">
+        <id property="seq"                  column="seq"/>
+        <result property="title"            column="title"/>
+        <result property="divisionYn"       column="division_yn"/>
+        <result property="content"          column="content"/>
+        <result property="fileGroupSeq"     column="file_group_seq"/>
+        <result property="reservationDate"  column="reservation_date"/>
+        <result property="exposureYn"       column="exposure_yn"/>
+        <result property="createdDate"      column="created_date"/>
+        <result property="createdBy"        column="created_by"/>
+        <result property="createdIp"        column="created_ip"/>
+        <result property="modifiedDate"     column="modified_by"/>
+        <result property="modifiedBy"       column="modified_by"/>
+        <result property="modifiedIp"       column="modified_ip"/>
+        <result property="isDeleted"        column="is_deleted"/>
+        <result property="viewCnt"          column="view_cnt"/>
+        <result property="startDate"        column="start_date"/>
+        <result property="fullname"        column="fullname"/>
+    </resultMap>
+    
+    <resultMap id="nestedResultMap" type="notice" extends="baseResultMap">
+		<collection property="attachments" columnPrefix="ATCH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+
+    <sql id="whereQuery">
+        N.is_deleted = 'N'
+        <if test='exposureYn != null and exposureYn != ""'>
+            AND N.exposure_yn = #{exposureYn}
+        </if>
+        <if test='searchWrd != null and searchWrd != ""'>
+			AND title LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%')
+		</if>
+    </sql>
+
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT
+            N.*,
+            DATE_FORMAT(N.created_date, '%Y-%m-%d %H:%i:%s') formatted_create_date,
+            row_number() OVER (ORDER BY N.created_date ) AS num,
+            A.fullname
+        FROM t_notice N
+        LEFT JOIN t_admin A on A.seq = N.created_by
+        <where>
+            <include refid="whereQuery"/>
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY N.created_date DESC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+    
+    <select id="countByFilter" parameterType="java.util.Map" resultType="long">
+		SELECT 
+			COUNT(seq)
+		FROM 
+			t_notice N
+		<where>
+			<include refid="whereQuery"/>
+		</where>	
+	</select>
+
+    <select id="getBySeq" parameterType="int" resultMap="nestedResultMap">
+        SELECT N.*,
+        	DATE_FORMAT(N.created_date, '%Y-%m-%d %H:%i:%s') formatted_create_date,
+        	F.file_seq AS ATCH_file_id, 
+			F.file_group_seq AS ATCH_file_grp_id, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.file_size AS ATCH_file_size, 
+			F.created_date AS ATCH_create_dt, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url, 
+			F.is_deleted AS ATCH_is_deleted,
+			A.fullname
+        FROM 
+        	t_notice N
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = N.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        LEFT JOIN
+		    t_admin A on A.seq = N.created_by
+        WHERE N.seq = #{seq,jdbcType=INTEGER}
+        AND N.is_deleted = 'N'
+    </select>
+    
+    <select id="getByLimit"  resultMap="nestedResultMap">
+        SELECT
+            N.seq,
+            N.title,
+        	CASE
+                WHEN N.reservation_date != 'null' AND N.reservation_date != '' THEN DATE_FORMAT(N.reservation_date, '%Y-%m-%d %H:%i:%s')
+                ELSE DATE_FORMAT(N.created_date, '%Y-%m-%d %H:%i:%s')
+            END AS created_date
+        FROM t_notice N
+        WHERE N.is_deleted = 'N'
+        ORDER  BY created_date DESC
+		LIMIT  0, 3
+    </select>
+
+    <select id="getLatestNotices" resultMap="baseResultMap">
+        SELECT N.*
+        FROM
+        	t_notice N
+        WHERE N.is_deleted = 'N'
+        ORDER BY N.seq DESC
+		LIMIT  0, 5
+    </select>
+
+    <select id="getPrevNext" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT TB.*
+        FROM (
+            SELECT
+                N.*,
+                DATE_FORMAT(N.created_date, '%Y-%m-%d %H:%i:%s') formatted_create_date,
+                row_number() OVER (ORDER BY N.created_date ) AS num
+            FROM t_notice N
+            <where>
+                <include refid="whereQuery"/>
+            </where>
+            ORDER BY N.created_date DESC
+        )TB
+        WHERE TB.num = #{rowNum}
+    </select>
+
+    <update id="update" parameterType="notice">
+        UPDATE t_notice
+        SET
+        <if test="title != null and title != ''">
+            title = #{title,jdbcType=VARCHAR},
+        </if>
+        <if test="divisionYn != null and divisionYn != ''">
+            division_yn = #{divisionYn,jdbcType=VARCHAR},
+        </if>
+        <if test="content != null and content != ''">
+            content = #{content,jdbcType=VARCHAR},
+        </if>
+        <if test="fileGroupSeq != null and fileGroupSeq != ''">
+            file_group_seq = #{fileGroupSeq,jdbcType=INTEGER},
+        </if>
+        <if test="reservationDate != null and reservationDate != ''">
+            reservation_date = #{reservationDate,jdbcType=VARCHAR},
+        </if>
+        <if test="exposureYn != null and exposureYn != ''">
+            exposure_yn = #{exposureYn,jdbcType=VARCHAR},
+        </if>
+        <if test="startDate != null and startDate != ''">
+            start_date = #{startDate,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedBy != null and modifiedBy != ''">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedIp != null and modifiedIp != ''">
+            modified_ip = #{modifiedIp,jdbcType=VARCHAR},
+        </if>
+        modified_date = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i')
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+    <insert id="insert">
+        INSERT INTO t_notice(
+            title,
+            division_yn,
+            content,
+            file_group_seq,
+            reservation_date,
+            exposure_yn,
+            start_date,
+            created_date,
+            created_by,
+            created_ip,
+            is_deleted
+        ) VALUES (
+            #{title,jdbcType=VARCHAR},
+            #{divisionYn,jdbcType=VARCHAR},
+            #{content,jdbcType=VARCHAR},
+            #{fileGroupSeq,jdbcType=VARCHAR},
+            #{reservationDate,jdbcType=VARCHAR},
+            #{exposureYn, jdbcType=VARCHAR},
+            #{startDate, jdbcType=VARCHAR},
+            DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i'),
+            #{createdBy,jdbcType=VARCHAR},
+            #{createdIp,jdbcType=VARCHAR},
+            #{isDeleted,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="deleteByBulk">
+        UPDATE t_notice
+        SET is_deleted = 'Y'
+        WHERE seq IN (
+            <foreach collection="ids" item="id" separator=",">
+                #{id}
+            </foreach>
+        )
+    </update>
+
+    <update id="deleteById" parameterType="int">
+        UPDATE t_notice
+        SET is_deleted = 'Y'
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+    
+    <update id="updateViewCount" parameterType="int">
+    	UPDATE t_notice
+        SET view_cnt = view_cnt + 1
+        WHERE seq = #{seq,jdbcType=INTEGER}
+	</update>
+</mapper>

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.notification.service.MailHistoryMapper">
+
+	<resultMap id="baseMap" 		type="mailHistory">
+		<id property="seq" 					column="seq" />
+		<result property="mailTemplateSeq" 	column="mail_template_seq" />
+		<result property="targetGroup" 		column="target_group" />
+		<result property="groupId" 			column="group_id" />
+		<result property="sendType" 		column="send_type" />
+		<result property="receiverSeq" 		column="receiver_seq" />
+		<result property="receiverUsername" column="receiver_username" />
+		<result property="receiverFullname" column="receiver_fullname" />
+		<result property="status" 			column="status" />
+		<result property="recipientCc" 		column="recipient_cc" />
+		<result property="recipientBcc" 	column="recipient_bcc" />
+		<result property="subject" 			column="subject" />
+		<result property="content" 			column="content" />
+		<result property="sendDate" 		column="created_date" />
+		<result property="isDeleted" 		column="is_deleted" />
+		<result property="schedDate" 		column="sched_date" />
+	</resultMap>
+
+	<sql id="column">
+    	seq, mail_template_seq, target_group, group_id, send_type, receiver_seq, receiver_username, receiver_fullname, status, recipient_cc, recipient_bcc, subject, content, created_date, is_deleted
+    </sql>
+    
+    <sql id="nestedColumn">
+    	MH.seq, MH.mail_template_seq, MH.target_group, MH.group_id, MH.send_type, MH.receiver_seq, MH.receiver_username, MH.receiver_fullname, MH.status, MH.recipient_cc, MH.recipient_bcc, MH.subject, MH.content, MH.created_date, MH.is_deleted
+    </sql> 
+    
+    <sql id="whereQuery">
+		MH.is_deleted = 'N'
+		<if test="searchKeyword != null and searchKeyword != ''">
+			AND (MH.subject LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
+			OR MH.content LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%'))
+		</if>
+		<if test="receiverUsername != null and receiverUsername != ''">
+			AND MH.receiver_username = #{receiverUsername}
+		</if>
+		<if test="receiverUsername != null and receiverUsername != ''">
+			AND MH.receiver_username = #{receiverUsername}
+		</if>
+		<if test="mailTemplateSeq != null and mailTemplateSeq > 0">
+			AND MH.mail_template_seq = #{mailTemplateSeq}
+		</if>
+		<if test="targetGroup != null and targetGroup != ''">
+			AND MH.target_group = #{targetGroup}
+		</if>
+		<if test="groupId != null and groupId != ''">
+			AND MH.group_id = #{groupId}
+		</if>
+		<if test="status != null and status != ''">
+			AND MH.status = #{status}
+		</if>
+		<if test="recipientCc != null and recipientCc != ''">
+			AND MH.recipient_cc = #{recipientCc}
+		</if>
+		<if test="useYn != null and useYn != ''">
+			AND MH.use_yn = #{useYn}
+		</if>
+	</sql>
+    
+    <select id="getAll" resultMap="baseMap">
+    	SELECT *
+		FROM t_mail_history
+		WHERE is_deleted = 'N'
+    </select>
+
+	<select id="getByFilter" parameterType="map" resultMap="baseMap">
+		SELECT MH.*
+		FROM t_mail_history MH
+		<where>
+			<include refid="whereQuery" />
+		</where>
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY MH.seq DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+	
+	<select id="countByFilter" parameterType="map" resultType="long">
+		SELECT count(MH.seq)
+		FROM t_mail_history MH
+		<where>
+			<include refid="whereQuery" />
+		</where>
+	</select>
+	
+	<select id="existById" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_mail_history
+        WHERE is_deleted = 'N' 
+        	AND seq = #{seq, jdbcType=VARCHAR}
+    </select>
+    
+    <select id="getById" resultMap="baseMap">
+        SELECT *
+        FROM t_mail_history 
+        WHERE is_deleted = 'N'
+        	AND seq = #{seq}
+    </select>
+
+	<select id="getGroupedList" parameterType="map" resultMap="baseMap">
+        SELECT MH.*
+        FROM t_mail_history MH
+		<where>
+			<include refid="whereQuery" />
+		</where>
+		GROUP BY MH.group_id
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY MH.seq DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <insert id="insert" parameterType="mailHistory" useGeneratedKeys="true" keyProperty="seq" keyColumn="seq">
+    	INSERT INTO t_mail_history (
+    		mail_template_seq, target_group, group_id, sender_username, receiver_seq, receiver_username, receiver_fullname, status, recipient_cc, recipient_bcc, subject, content, send_date, created_date, sched_date
+    	) VALUES (
+    		#{mailTemplateSeq},
+    		#{targetGroup},
+    		#{groupId},
+    		#{senderUsername},
+    		#{receiverSeq},
+    		#{receiverUsername},
+    		#{receiverFullname},
+    		#{status},
+    		#{recipientCc},
+    		#{recipientBcc},
+    		#{subject},
+    		#{content},
+    		#{sendDate},
+    		#{createdDate},
+    		#{schedDate}
+		)
+    </insert>
+    
+    <update id="update" parameterType="mailHistory">
+		UPDATE t_mail_history
+		<set>
+			<if test="status != null and status != ''">
+				status = #{status, jdbcType=VARCHAR},
+			</if>
+			<if test="sendDate != null and sendDate != ''">
+				send_date = #{sendDate, jdbcType=VARCHAR},
+			</if>
+		</set>
+		WHERE seq = #{seq}			
+    		AND is_deleted = 'N'
+	</update>
+    
+    <update id="deleteById">
+    	UPDATE t_mail_history
+    	SET is_deleted = 'Y'
+    	WHERE seq = #{seq}
+    </update>
+
+	<select id="selectListScheduledMail" parameterType="map" resultMap="baseMap">
+		SELECT MH.*
+		FROM t_mail_history MH
+		WHERE
+			MH.send_type = 'R'
+		  AND MH.status = 'SCHEDULED'
+		  AND is_deleted = 'N'
+		  AND DATE_FORMAT(MH.sched_date, '%Y%m%d') = DATE_FORMAT(NOW() , '%Y%m%d')
+		ORDER BY MH.sched_date ASC
+	</select>
+
+
+</mapper>

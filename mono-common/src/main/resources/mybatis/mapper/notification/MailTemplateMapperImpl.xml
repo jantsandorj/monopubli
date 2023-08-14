@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.notification.service.MailTemplateMapper">
+
+	<resultMap id="baseMap" 		type="mailTemplate">
+		<id property="seq" 					column="seq" />
+		<result property="name" 			column="name" />
+		<result property="targetGroup" 		column="target_group" />
+		<result property="subject" 			column="subject" />
+		<result property="content" 			column="content" />
+		<result property="itemDate"		 	column="item_date" />
+		<result property="itemUserSeq"		column="item_user_seq" />
+		<result property="itemUsername"		column="item_username" />
+		<result property="itemUserFullname"	column="item_user_fullname" />
+		<result property="itemSiteName" 	column="item_site_name" />
+		<result property="itemSiteUrl" 		column="item_site_url" />
+		<result property="itemSitePhone" 	column="item_site_phone" />
+		<result property="useYn" 			column="use_yn" />
+		<result property="createdDate" 		column="created_date" />
+		<result property="createdBy" 		column="created_by" />
+		<result property="modifiedDate" 	column="modified_date" />
+		<result property="modifiedBy" 		column="modified_by" />
+		<result property="isDeleted" 		column="is_deleted" />
+	</resultMap>      
+
+	<sql id="column">
+    	seq, name, target_group, subject, content, item_date, item_user_seq, item_username, item_user_fullname, item_site_name, item_site_url, item_site_phone, use_yn, created_date, created_by, modified_date, modified_by, is_deleted
+    </sql>  
+    
+    <sql id="nestedColumn">
+    	MT.seq, MT.name, MT.target_group, MT.subject, MT.content, MT.item_date, MT.item_user_seq, MT.item_username, MT.item_user_fullname, MT.item_site_name, MT.item_site_url, MT.item_site_phone, 
+    	MT.use_yn, MT.created_date, MT.created_by, MT.modified_date, MT.modified_by, MT.is_deleted
+    </sql> 
+    
+    <sql id="whereQuery">
+		MT.is_deleted = 'N'
+		<if test="searchKeyword != null and searchKeyword != ''">
+			AND (MT.subject LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
+			OR MT.content LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%'))
+		</if>
+		<if test="name != null and name != ''">
+			AND MT.name = #{name}
+		</if>
+		<if test="targetGroup != null and targetGroup != ''">
+			AND MT.target_group = #{targetGroup}
+		</if>
+		<if test="useYn != null and useYn != ''">
+			AND MT.use_yn = #{useYn}
+		</if>
+	</sql>
+    
+    <select id="getAll" resultMap="baseMap">
+    	SELECT *
+		FROM t_mail_template
+		WHERE is_deleted = 'N'
+    </select>
+
+	<select id="getByFilter" parameterType="map" resultMap="baseMap">
+		SELECT MT.*
+		FROM t_mail_template MT
+		<where>
+			<include refid="whereQuery" />
+		</where>
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY MT.seq DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+	
+	<select id="countByFilter" parameterType="map" resultType="long">
+		SELECT count(MT.seq)
+		FROM t_mail_template MT
+		<where>
+			<include refid="whereQuery" />
+		</where>
+	</select>
+	
+	<select id="existById" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_mail_template
+        WHERE is_deleted = 'N' 
+        	AND seq = #{seq, jdbcType=VARCHAR}
+    </select>
+    
+    <select id="getById" resultMap="baseMap">
+        SELECT *
+        FROM t_mail_template 
+        WHERE is_deleted = 'N'
+        	AND seq = #{seq}
+    </select>
+    
+    <insert id="insert" parameterType="mailTemplate" useGeneratedKeys="true" keyProperty="seq" keyColumn="seq">
+    	INSERT INTO t_mail_template (
+    		name, target_group, subject, content, item_date, item_user_seq, item_username, item_user_fullname, item_site_name, item_site_url, item_site_phone, 
+    		use_yn, created_date, created_by 
+    	) VALUES (
+    		#{name},
+    		#{targetGroup},
+    		#{subject},
+    		#{content},
+    		#{itemDate},
+    		#{itemUserSeq},
+    		#{itemUsername},
+    		#{itemUserFullname},
+    		#{itemSiteName},
+    		#{itemSiteUrl},
+    		#{itemSitePhone},
+    		#{useYn},
+    		#{createdDate},
+    		#{createdBy}
+		)
+    </insert>
+    
+    <update id="update" parameterType="mailTemplate">
+		UPDATE t_mail_template
+		<set>
+			<if test="name != null and name != ''">
+				name = #{name, jdbcType=VARCHAR},
+			</if>
+			<if test="targetGroup != null and targetGroup != ''">
+				target_group = #{targetGroup, jdbcType=VARCHAR},
+			</if>
+			<if test="subject != null and subject != ''">
+				subject = #{subject, jdbcType=VARCHAR},
+			</if>
+			<if test="content != null and content != ''">
+				content = #{content, jdbcType=VARCHAR},
+			</if>
+			<if test="useYn != null and useYn != ''">
+				use_yn = #{useYn, jdbcType=VARCHAR},
+			</if>
+			<if test="modifiedBy != null and modifiedBy != ''">
+				modified_by = #{modifiedBy, jdbcType=VARCHAR},
+			</if>
+			modified_date = #{modifiedDate}
+		</set>
+		WHERE seq = #{seq}			
+    		AND is_deleted = 'N'
+	</update>
+    
+    <update id="deleteById">
+    	UPDATE t_mail_template
+    	SET is_deleted = 'Y'
+    	WHERE seq = #{seq}
+    </update>
+</mapper>

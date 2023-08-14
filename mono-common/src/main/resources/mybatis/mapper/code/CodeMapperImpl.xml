@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.code.service.CodeMapper">
+
+	<resultMap id="baseResultMap" 		        type="code" extends="commonMapper.generalMap">
+		<id property="seq" 					    column="seq" />
+		<result property="codeGroup" 			column="code_group" />
+		<result property="codeGroupNm" 			column="code_group_nm" />
+		<result property="code" 			    column="code" />
+		<result property="codeNm" 			    column="code_nm" />
+		<result property="codeEngNm" 			column="code_eng_nm" />
+		<result property="codeDescript" 		column="code_descript" />
+		<result property="useYn" 			    column="use_yn" />
+		<result property="orderNo" 			    column="order_no" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		A.is_deleted = 'N'  
+    	<if test="codeGroup != null and codeGroup != ''">
+   			AND A.code_group LIKE '%' || #{codeGroup} || '%'
+   		</if>
+        <if test="code != null and code != ''">
+            AND A.code LIKE '%' || #{code} || '%'
+        </if>
+        <if test="createdBy != null and createdBy != ''">
+            AND A.created_by = #{createdBy}
+        </if>
+        <if test='searchKeyword != null and searchKeyword != ""'>
+			AND code LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
+		</if>
+    </sql>
+    
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page != null and page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY A.created_date DESC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <select id="getBySeqArr" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+        WHERE
+        A.is_deleted = 'N'
+        AND A.seq IN
+        <if test="_parameter != null and _parameter != ''">
+            <foreach collection="_parameter.split(',')" item="param" index="index" separator="," open="(" close=")">
+                #{param}
+            </foreach>
+        </if>
+        ORDER BY A.order_no ASC
+    </select>
+
+    <select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A 
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY A.order_no ASC
+    </select>
+    
+    <select id="getListByGroup" parameterType="java.lang.String" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A 
+ 		WHERE 
+ 			A.is_deleted = 'N'  
+ 			AND A.code_group = #{_parameter}
+ 		ORDER BY A.order_no ASC
+    </select>
+    
+    <select id="countByFilter" parameterType="map" resultType="long">
+        SELECT count(1)
+        FROM t_code A
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+    
+    <select id="getByGroupAndCode" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+		WHERE A.code_group = #{codeGroup} AND A.code = #{code} AND is_deleted = 'N'
+		ORDER BY A.order_no ASC
+    </select>
+    <select id="getBySeq" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+        WHERE A.seq = #{seq}
+    </select>
+    
+    <select id="getByGroup" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+		WHERE A.code_group = #{codeGroup} AND is_deleted = 'N'
+		ORDER BY A.order_no ASC
+    </select>
+
+    <update id="deleteByCode">
+        UPDATE t_code SET is_deleted = 'Y'
+		WHERE code = #{code} AND code_group = #{codeGroup}
+		AND is_deleted = 'N'
+    </update>
+
+    <select id="getAllGroupCodes" parameterType="string" resultMap="baseResultMap">
+        SELECT A.code, A.code_eng_nm
+        FROM t_code A
+        where A.is_deleted = 'N'  AND A.code_group = 'DIVISION'
+		GROUP BY A.code, A.code_eng_nm
+    </select>
+
+    <insert id="insert" parameterType="code">
+        INSERT INTO t_code (
+			code,
+			code_group,
+			code_group_nm,
+			code_descript,
+			code_nm,
+			code_eng_nm,
+			<if test='useYn != null and useYn != ""'>
+            	use_yn,
+            </if>
+			order_no,
+			<if test='isActive != null and isActive != ""'>
+            	is_active,
+            </if>
+            created_by,
+			created_ip,
+			created_date
+		) VALUES (
+			#{code, jdbcType=VARCHAR},
+			#{codeGroup, jdbcType=VARCHAR},
+			#{codeGroupNm, jdbcType=VARCHAR},
+			#{codeDescript, jdbcType=VARCHAR},
+			#{codeNm, jdbcType=VARCHAR},
+			#{codeEngNm, jdbcType=VARCHAR},
+			<if test='useYn != null and useYn != ""'>
+				#{useYn, jdbcType=VARCHAR},
+			</if>
+			#{orderNo, jdbcType=INTEGER},
+			<if test='isActive != null and isActive != ""' >
+				#{isActive, jdbcType=VARCHAR},
+			</if>
+			#{createdBy, jdbcType=INTEGER},
+			#{createdIp, jdbcType=VARCHAR},
+			#{createdDate, jdbcType=VARCHAR}			
+		)
+    </insert>
+
+    <insert id="insertByBulk" parameterType="java.util.Map">
+
+    </insert>
+
+    <update id="update">
+        UPDATE t_code
+        SET
+        <if test="code != null">
+            code = #{code,jdbcType=VARCHAR},
+        </if>
+        <if test="codeGroup != null">
+            code_group = #{codeGroup,jdbcType=VARCHAR},
+        </if>
+        <if test="codeNm != null">
+            code_nm = #{codeNm,jdbcType=VARCHAR},
+        </if>
+        <if test="codeEngNm != null">
+            code_eng_nm = #{codeEngNm,jdbcType=VARCHAR},
+        </if>
+        <if test="codeDescript != null">
+            code_descript = #{codeDescript,jdbcType=VARCHAR},
+        </if>
+        <if test='useYn != null and useYn != ""'>
+            use_yn = #{useYn,jdbcType=VARCHAR},
+        </if>
+        <if test="orderNo != null">
+            order_no = #{orderNo,jdbcType=INTEGER},
+        </if>
+        <if test="modifiedBy != null">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedIp != null">
+            modified_ip = #{modifiedIp,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+    <select id="getByAdminSeq" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_code A
+        LEFT JOIN admin_skill B ON B.skill_seq = A.seq
+        WHERE B.admin_seq = #{seq}
+    </select>
+
+
+</mapper>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.auth.service.AuthorInfoMapper">
+	<resultMap 	id="authorInfoMap" type="authorInfo"	extends="commonMapper.generalMap">
+		<result property="authorCd" 		column="author_cd"/>
+		<result property="authorNm" 		column="author_nm"/>
+		<result property="authorDesc" 		column="author_desc"/>
+		<result property="useYn"	 		column="use_yn"/>
+	</resultMap>
+	
+	<sql id="whereQuery">
+        A.is_deleted = 'N'
+        <if test="searchWrd != null and searchWrd != ''">
+        	AND (A.author_nm LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%') || A.author_cd LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%'))
+        </if>
+        <if test="useYn != null and useYn != ''">
+			AND IFNULL(A.use_yn, 'Y') = #{useYn}
+		</if>
+    </sql>
+	
+	<select id="getById" resultMap="authorInfoMap">
+		SELECT
+		   A.*
+		FROM t_author_info A
+		WHERE A.author_cd = #{authorCd}
+	</select>
+	
+	<select id="getByFilter" parameterType="map" resultMap="authorInfoMap">
+		SELECT
+			A.*
+		FROM t_author_info A
+		<where>
+            <include refid="whereQuery"/>
+        </where>
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY A.created_date DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+	
+	<select id="getAll" parameterType="map" resultMap="authorInfoMap">
+		SELECT
+			A.author_cd, A.author_nm
+		FROM 
+			t_author_info A
+		WHERE
+			A.is_deleted = 'N' AND A.use_yn = 'Y'
+        ORDER BY A.created_date DESC
+	</select>
+	
+	<select id="countByFilter" parameterType="java.util.Map" resultType="long">
+		SELECT 
+			COUNT(author_cd)
+		FROM 
+			t_author_info A
+		<where>
+			<include refid="whereQuery"/>
+		</where>	
+	</select>
+
+	<insert id="insert">
+		INSERT INTO	t_author_info
+			(author_cd,
+			author_nm,
+			author_desc,
+			use_yn,
+			created_date
+		) values(
+			  #{authorCd},
+			  #{authorNm},
+			  #{authorDesc},
+			  #{useYn},
+			  DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+			)
+	</insert>
+
+	<update id="deleteById" parameterType="authorInfo">
+		UPDATE t_author_info
+		SET	IS_DELETED = 'Y'
+		WHERE author_cd = #{authorCd,jdbcType=VARCHAR}
+	</update>
+
+	<update id="update" parameterType="authorInfo">
+		UPDATE t_author_info
+		SET
+		<if test='authorCd != null and authorCd != ""'>
+			author_cd = #{authorCd,jdbcType=VARCHAR},
+		</if>
+		<if test='authorNm != null and authorNm != ""'>
+			author_nm = #{authorNm, jdbcType=VARCHAR},
+		</if>
+		<if test='authorDesc != null and authorDesc != ""'>
+			author_desc = #{authorDesc, jdbcType=VARCHAR},
+		</if>
+		<if test='useYn != null and useYn != ""'>
+			use_yn = #{useYn,jdbcType=VARCHAR},
+		</if>
+		modified_date = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+		WHERE author_cd = #{authorCd}
+	</update>
+
+</mapper>

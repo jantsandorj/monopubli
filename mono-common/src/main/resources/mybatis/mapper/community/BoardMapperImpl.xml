@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.community.service.BoardMapper">
+
+	<resultMap id="baseResultMap" type="board" extends="commonMapper.generalMap">
+		<id property="seq" 						column="seq" />
+		<result property="boardType" 			column="board_type" />
+		<result property="title" 				column="title" />
+		<result property="contents" 			column="contents" />
+		<result property="topNoticeYn" 			column="top_notice_yn" />
+		<result property="popupYn" 			    column="popup_yn" />
+		<result property="popupStartDay" 		column="popup_start_day" />
+		<result property="popupEndDay" 			column="popup_end_day" />
+		<result property="viewCnt" 				column="view_cnt" />
+		<result property="fileGrpId" 			column="file_grp_id" />
+	</resultMap>
+
+	<resultMap id="nestedResultMap" type="board" extends="baseResultMap">
+	
+		<collection property="attachments" columnPrefix="ATTACH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+
+	<sql id="whereQuery">
+		<if test="boardType != null">
+			<choose>
+				<when test='boardType == "N" '>
+					AND (board_type = 'U' OR board_type = 'S')
+				</when>
+				<otherwise>
+					AND board_type = #{boardType,jdbcType=VARCHAR}
+				</otherwise>
+			</choose>
+		</if>
+		<if test="popupStartDay != null and popupStartDay != ''">
+			AND TO_DATE(create_dt, 'YYYYMMDDHH24MISS') <![CDATA[>=]]> TO_DATE(#{popupStartDay,jdbcType=VARCHAR}, 'YYYY-MM-DD')
+		</if>
+		<if test="popupEndDay != null and popupEndDay != ''">
+			AND TO_DATE(create_dt, 'YYYYMMDDHH24MISS') <![CDATA[<=]]> TO_DATE(#{popupEndDay,jdbcType=VARCHAR}, 'YYYY-MM-DD')
+		</if>
+		<if test="searchKeyword != null and searchKeyword != ''">
+			<if test="searchCondition == 'ALL'">
+				AND (title LIKE '%' || #{searchKeyword,jdbcType=VARCHAR} || '%'
+				OR contents LIKE '%' || #{searchKeyword,jdbcType=VARCHAR} || '%')
+			</if>
+			<if test="searchCondition == 'TITLE'">
+				AND title LIKE '%' || #{searchKeyword,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="searchCondition == 'CONTENTS'">
+				AND contents LIKE '%' || #{searchKeyword,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="searchCondition == 'CREATE_ID'">
+				AND create_id LIKE '%' || #{searchKeyword,jdbcType=VARCHAR} || '%'
+			</if>
+		</if>
+	</sql>
+
+	<select id="getById" parameterType="map" resultMap="nestedResultMap">
+		SELECT B.*,
+			F.file_id AS ATTACH_file_id, 
+			F.file_grp_id AS ATTACH_file_grp_id, 
+			F.sub_seq AS ATTACH_sub_seq, 
+			F.file_nm AS ATTACH_file_nm, 
+			F.file_ext AS ATTACH_file_ext, 
+			F.file_size AS ATTACH_file_size, 
+			F.down_cnt AS ATTACH_down_cnt, 
+			F.create_dt AS ATTACH_create_dt, 
+			F.stored_nm AS ATTACH_stored_nm, 
+			F.url AS ATTACH_url, 
+			F.stored_path AS ATTACH_stored_path, 
+			F.download_url AS ATTACH_download_url, 
+			F.delete_url AS ATTACH_delete_url, 
+			F.is_deleted AS ATTACH_is_deleted
+		FROM t_board B
+		LEFT JOIN t_file F
+			ON F.file_grp_id = B.file_grp_id
+			AND F.is_deleted = 'N'
+		WHERE B.is_deleted = 'N' 
+			AND B.seq = #{seq,jdbcType=VARCHAR}
+	</select>
+
+	<select id="existById" parameterType="java.util.Map" resultMap="baseResultMap">
+		SELECT *
+		FROM t_board
+		WHERE is_deleted = 'N' AND seq = #{seq,jdbcType=VARCHAR}
+	</select>
+
+
+	<select id="getAllCounts" resultType="integer">
+		SELECT SUM(COUNT) AS total_sum
+		FROM (
+		    SELECT COUNT(1) AS COUNT FROM t_faq WHERE is_deleted = 'N'
+		    UNION ALL
+		    SELECT COUNT(1) AS COUNT FROM t_notice WHERE is_deleted = 'N'
+		    UNION ALL
+		    SELECT COUNT(1) AS COUNT FROM t_qna WHERE is_deleted = 'N'
+		) AS combined_tables;
+	</select>
+
+	<select id="getAllRegisteredBoardLastMonthCount" resultType="integer">
+		SELECT SUM(COUNT) AS total_sum
+		FROM (
+		    SELECT COUNT(1) AS COUNT FROM t_faq WHERE is_deleted = 'N'   <![CDATA[ AND created_date > #{validDate,jdbcType=VARCHAR} ]]>
+		    UNION ALL
+		    SELECT COUNT(1) AS COUNT FROM t_notice WHERE is_deleted = 'N'  <![CDATA[ AND created_date > #{validDate,jdbcType=VARCHAR} ]]>
+		    UNION ALL
+		    SELECT COUNT(1) AS COUNT FROM t_qna WHERE is_deleted = 'N'  <![CDATA[ AND created_date > #{validDate,jdbcType=VARCHAR} ]]>
+		) AS combined_tables;
+	</select>
+
+	<select id="getAll" parameterType="java.util.Map" resultMap="baseResultMap">
+		SELECT *
+		FROM t_board
+		WHERE is_deleted = 'N'
+		<include refid="whereQuery" />
+		ORDER BY create_dt DESC
+	</select>
+
+	<select id="getByIdList" parameterType="java.util.Map" resultMap="baseResultMap">
+		SELECT *
+		FROM t_board
+		WHERE is_deleted = 'N'
+		<include refid="whereQuery" />
+		ORDER BY create_dt DESC
+	</select>
+
+	<select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+		SELECT *
+		FROM t_board
+		WHERE is_deleted = 'N'
+		<include refid="whereQuery" />
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY create_dt DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+
+	<select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+		SELECT *
+		FROM t_board
+		WHERE is_deleted = 'N'
+			<include refid="whereQuery" />
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY create_dt DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+
+	<select id="countByFilter" parameterType="map" resultType="long">
+		SELECT count(1)
+		FROM t_board
+		WHERE is_deleted = 'N'
+			<include refid="whereQuery" />
+	</select>
+
+	<insert id="insert" parameterType="board">
+		INSERT INTO t_board (
+			board_type,
+			title,
+			contents,
+			top_notice_yn,
+			popup_yn,
+			popup_start_day,
+			popup_end_day,
+			view_cnt,
+			file_grp_id,
+			create_id,
+			create_ip,
+			create_dt
+		) VALUES (
+			 #{boardType, jdbcType=VARCHAR},
+			 #{title, jdbcType=VARCHAR},
+			 #{contents, jdbcType=VARCHAR},
+			 #{topNoticeYn, jdbcType=VARCHAR},
+			 #{popupYn, jdbcType=VARCHAR},
+			 #{popupStartDay, jdbcType=VARCHAR},
+			 #{popupEndDay, jdbcType=VARCHAR},
+			 #{viewCnt},
+			 #{fileGrpId, jdbcType=INTEGER},
+			 #{createId, jdbcType=VARCHAR},
+			 #{createIp, jdbcType=VARCHAR},
+			 #{createDt, jdbcType=VARCHAR}
+		 )
+	</insert>
+
+	<insert id="insertByBulk" parameterType="java.util.Map">
+
+	</insert>
+
+	<update id="update" parameterType="board">
+		UPDATE t_board
+		SET
+		<if test="boardType != null">
+			board_type = #{boardType, jdbcType=VARCHAR},
+		</if>
+		<if test="title != null">
+			title = #{title, jdbcType=VARCHAR},
+		</if>
+		<if test="contents != null">
+			contents = #{contents, jdbcType=VARCHAR},
+		</if>
+		<if test="topNoticeYn != null">
+			top_notice_yn = #{topNoticeYn, jdbcType=VARCHAR},
+		</if>
+		<if test="popupYn != null">
+			popup_yn = #{popupYn, jdbcType=VARCHAR},
+		</if>
+		<if test="popupStartDay != null">
+			popup_start_day = #{popupStartDay, jdbcType=VARCHAR},
+		</if>
+		<if test="popupEndDay != null">
+			popup_end_day = #{popupEndDay, jdbcType=VARCHAR},
+		</if>
+		<if test="viewCnt != null">
+			view_cnt = #{viewCnt, jdbcType=INTEGER},
+		</if>
+		<if test="fileGrpId != null">
+			file_grp_id = #{fileGrpId, jdbcType=INTEGER},
+		</if>
+		<if test="modifiedBy != null">
+			modify_id = #{modifiedBy, jdbcType=VARCHAR},
+		</if>
+		<if test="modifyIp != null">
+			modify_ip = #{modifyIp, jdbcType=VARCHAR},
+		</if>
+		<if test="downloadUrl != null">
+			download_url = #{downloadUrl, jdbcType=VARCHAR},
+		</if>
+		<if test="deleteUrl != null">
+			delete_url = #{deleteUrl, jdbcType=VARCHAR},
+		</if>
+		modify_dt = #{modifiedDate,jdbcType=VARCHAR}
+		WHERE seq = #{seq,jdbcType=VARCHAR}
+	</update>
+
+	<update id="updateViewCount" parameterType="Long" >
+        UPDATE t_board
+		SET	VIEW_CNT = VIEW_CNT + 1
+		WHERE seq = #{seq,jdbcType=VARCHAR}
+	</update>
+
+	<update id="deleteById" parameterType="Long">
+		UPDATE t_board
+		SET	is_deleted = 'Y'
+		WHERE seq = #{seq}
+	</update>
+
+	<select id="deleteByIdAndCreateId" parameterType="java.util.Map" resultMap="baseResultMap">
+
+	</select>
+
+	<select id="delete" parameterType="java.util.Map" >
+		DELETE FROM t_board WHERE seq = #{seq}
+	</select>
+
+	<select id="deleteByBulk" parameterType="java.util.Map" resultMap="baseResultMap">
+
+	</select>
+
+</mapper>

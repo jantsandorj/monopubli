@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.auth.service.MenuMapper">
+	<resultMap 	id="menuMap" type="menu"	extends="commonMapper.generalMap">
+		<result property="seq" 				column="seq"/>
+		<result property="menuName" 		column="menu_name"/>
+		<result property="menuNameKr" 		column="menu_name_kr"/>
+		<result property="menuUrl" 			column="menu_url"/>
+		<result property="positionType" 	column="position_type"/>
+		<result property="menuType" 		column="menu_type"/>
+		<result property="parentSeq" 		column="parent_seq"/>
+		<result property="orderNumber" 		column="order_number"/>
+		<result property="headerText" 		column="header_text"/>
+		<result property="useYn" 		    column="use_yn"/>
+		<result property="showYn" 		    column="show_yn"/>
+		<result property="authYn" 		    column="auth_yn"/>
+		<result property="menuId" 			column="menu_id"/>
+		<result property="adminMenuYn" 		column="admin_menu_yn"/>
+		<result property="fileGroupSeq" 	column="file_group_seq"/>
+	</resultMap>
+
+	<resultMap 	id="nestedMenuMap" 		type="menu"		extends="menuMap">
+		<!-- <collection property="children" ofType="menu"	columnPrefix="CHILD_"	resultMap="menuMap" /> -->
+		<collection property="attachment" columnPrefix="ATCH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+	
+	
+	<select id="getMenuList" resultMap="nestedMenuMap">
+		WITH RECURSIVE R AS
+        (
+             SELECT 1 DEPTH
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_name_kr
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.file_group_seq
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = 0
+    
+            UNION ALL
+    
+             SELECT DEPTH + 1
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_name_kr
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.file_group_seq
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by AS CHILD_modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+                 , R
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = R.seq
+        )
+        SELECT R.*,
+        	F.file_seq AS ATCH_file_seq, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url
+        FROM R
+        LEFT JOIN 
+		    t_file F ON F.file_group_seq = R.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        WHERE 1 = 1
+        	<if test="positionType != null and positionType != ''">
+        		AND position_type = #{positionType}
+        	</if>
+        	<if test="adminMenuYn != null and adminMenuYn != ''">
+        		AND admin_menu_yn = #{adminMenuYn}
+        	</if>
+        	ORDER BY R.DEPTH, R.seq;
+	</select>
+	
+	<select id="getMenuListByAuth" resultMap="nestedMenuMap">
+		WITH RECURSIVE R AS
+        (
+             SELECT 1 DEPTH
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_name_kr
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.file_group_seq
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = 0
+    
+            UNION ALL
+    
+             SELECT DEPTH + 1
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_name_kr
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.file_group_seq
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by AS CHILD_modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+                 , R
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = R.seq
+        )
+        SELECT R.*,
+        	F.file_seq AS ATCH_file_seq, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url
+        FROM R
+        LEFT JOIN 
+		    t_file F ON F.file_group_seq = R.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        INNER JOIN 
+        	t_author_role B ON R.seq = B.menu_seq  AND B.author_cd = #{authorCd}
+        WHERE admin_menu_yn = 'Y' 
+        	ORDER BY R.DEPTH, R.seq;
+	</select>
+	
+	
+	<insert id="saveMenu" useGeneratedKeys="true" keyProperty="seq" parameterType="menu">
+        INSERT INTO t_menu (
+	          parent_seq
+	        , order_number
+	        , menu_name
+	        , menu_name_kr
+	        , menu_url
+	        , position_type
+	        , menu_type
+	        , is_deleted
+	        , use_yn
+	        , header_text
+	        , show_yn
+	        , menu_id
+	        , admin_menu_yn
+	        , file_group_seq
+	        , created_by
+	        , created_date)
+        (SELECT
+        	(CASE WHEN #{parentSeq} = 0 THEN 0 ELSE #{parentSeq} END)
+          	, MAX(order_number) + 1
+            , #{menuName}
+            , #{menuNameKr}
+            , #{menuUrl}
+            , #{positionType}
+            , #{menuType}
+            , 'N'
+            , #{useYn}
+            , #{headerText}
+            , #{showYn}
+            , #{menuId}
+            , #{adminMenuYn}
+            , #{fileGroupSeq}
+            , #{createdBy}
+            , DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s') FROM t_menu
+         )
+         ON DUPLICATE KEY UPDATE   
+             parent_seq 	= (CASE WHEN #{parentSeq} = 0 THEN 0 ELSE #{parentSeq} END)
+            , order_number  = #{orderNumber}      
+            , menu_name      = #{menuName}    
+            , menu_url       = #{menuUrl}     
+            , position_type  = #{positionType}     
+            , modified_by    = ''  
+            , modified_date  = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s') 
+	</insert>
+
+	<update id="menuPositionChange" parameterType="menu">
+		CALL FN_REORDER(#{seq}, #{upperMenuId}, #{parentSeq});
+	</update>
+	
+	<select id="getById" resultMap="nestedMenuMap">
+		SELECT
+		   (SELECT menu_name  FROM t_menu m WHERE m.seq = tm.parent_seq) upper_menu_name,
+		   tm.*,
+		    F.file_seq AS ATCH_file_seq, 
+			F.file_group_seq AS ATCH_file_grp_id, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.file_size AS ATCH_file_size, 
+			F.created_date AS ATCH_create_dt, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url, 
+			F.is_deleted AS ATCH_is_deleted
+		FROM 
+			t_menu tm
+		LEFT JOIN 
+			t_file F ON F.file_group_seq = tm.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+		WHERE tm.seq = #{seq}
+	</select>
+	
+	<select id="getByMenuId" resultMap="menuMap">
+		SELECT
+		   tm.menu_id
+		FROM t_menu tm
+		WHERE IFNULL(tm.is_deleted, 'N') = 'N' AND tm.menu_id = #{menuId} AND tm.admin_menu_yn = #{adminMenuYn} LIMIT 1
+	</select>
+
+	<select id="getByFilter" parameterType="map" resultMap="menuMap">
+		SELECT
+			(SELECT menu_nm  FROM t_menu m WHERE m.menu_id = tm.upper_menu_id) upper_menu_name,
+			tm.*
+		FROM t_menu tm
+		WHERE 1 = 1
+			<if test="adminMenuYn != null and adminMenuYn != ''">
+        		AND admin_menu_yn = #{adminMenuYn}
+        	</if>
+		<!-- <where>
+			<include refid="whereQuery" />
+		</where> -->
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY tm.upper_menu_id,tm.menu_id ASC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+
+	<select id="getChildList" resultMap="menuMap">
+		SELECT * FROM
+			t_menu tm
+		WHERE tm.is_deleted ='N' AND tm.upper_menu_id = #{menuId}
+	</select>
+
+	<select id="countChildList" parameterType="java.util.Map" resultType="long">
+		SELECT count(menu_id) FROM
+			t_menu tm
+		WHERE tm.is_deleted ='N' AND tm.upper_menu_id = #{menuId}
+	</select>
+
+	<select id="canUseMenuNm" resultType="int">
+        SELECT COUNT(menu_id)
+			FROM t_menu
+		WHERE menu_nm = #{menuNm}
+    </select>
+
+	<select id="canUseMenuUrl" resultType="int">
+        SELECT COUNT(menu_id)
+			FROM t_menu
+		WHERE menu_url = #{menuUrl}
+    </select>
+
+	<select id="countByFilter" parameterType="java.util.Map" resultType="long">
+		SELECT COUNT(menu_id)
+		FROM t_menu tm
+		<!-- <where>
+			<include refid="whereQuery" />
+		</where> -->
+	</select>
+
+	<select id="getParentListId" resultMap="menuMap">
+		SELECT t.* FROM t_menu t WHERE t.is_deleted = 'N' AND t.upper_menu_id = 0 and t.menu_id != #{menuId}
+	</select>
+
+	<select id="getWithoutRoleMenuList" resultMap="menuMap">
+		SELECT tm.* FROM t_menu tm	WHERE tm.is_deleted ='N' AND tm.menu_id NOT IN
+			(SELECT menu_id	FROM role_menu_map	WHERE role_id = #{roleId} AND is_deleted='N')
+		UNION
+		SELECT tm.* FROM t_menu tm	WHERE tm.is_deleted ='N' AND tm.menu_id IN
+			(SELECT menu_id	FROM role_menu_map	WHERE role_id = #{roleId} AND is_deleted='Y')
+	</select>
+
+	<select id="countWithoutRoleMenuList" parameterType="java.util.Map" resultType="long">
+		SELECT COUNT(*) FROM (
+			SELECT tm.* FROM t_menu tm	WHERE tm.is_deleted ='N' AND tm.menu_id NOT IN
+				(SELECT menu_id	FROM role_menu_map	WHERE role_id = #{roleId} AND is_deleted='N')
+			UNION
+			SELECT tm.* FROM t_menu tm	WHERE tm.is_deleted ='N' AND tm.menu_id IN
+				(SELECT menu_id	FROM role_menu_map	WHERE role_id = #{roleId} AND is_deleted='Y'))
+	</select>
+
+	<select id="isChildMenu" resultType="boolean">
+		SELECT count(menu_id)= 1 FROM t_menu t WHERE t.upper_menu_id != 0 and t.menu_id = #{menuId}
+	</select>
+	
+	<select id="getMenuTreeByUsername" resultMap="nestedMenuMap">
+    	SELECT 
+			PM.menu_id,
+			PM.menu_nm,
+			PM.menu_url,
+			PM.menu_class,
+			CM.menu_id AS CHILD_menu_id,
+			CM.menu_nm AS CHILD_menu_nm,
+			CM.menu_url AS CHILD_menu_url
+		FROM role_user_map RUM
+		INNER JOIN role_menu_map RMM 
+			ON RMM.role_id = RUM.role_id
+		INNER JOIN t_menu PM 
+			ON PM.menu_id = RMM.menu_id
+			AND PM.upper_menu_id = 0
+		LEFT JOIN t_menu CM 
+			ON CM.upper_menu_id = PM.menu_id 
+		WHERE RMM.view_yn = 'Y'
+			AND PM.use_yn = 'Y'
+			AND CM.use_yn = 'Y'
+			AND RUM.user_id = #{username}
+		ORDER BY PM.order_number ASC, CM.order_number ASC
+    </select>
+
+	<insert id="insert">
+		INSERT INTO	t_menu
+			(menu_nm,
+			menu_url,
+			menu_prefix,
+			order_number,
+			upper_menu_id,
+			menu_class,
+			create_dt,
+			create_id,
+			create_ip
+		) values(
+			  #{menuNm},
+			  #{menuUrl},
+			  #{menuPrefix},
+			  #{orderNumber},
+			  #{upperMenuId},
+			  #{menuClass},
+			  TO_CHAR(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s'),
+			  #{createId},
+			  #{createIp}
+			 )
+	</insert>
+
+	<update id="deleteById" parameterType="Long">
+		UPDATE t_menu
+		SET	IS_DELETED = 'Y'
+		WHERE seq = #{seq,jdbcType=VARCHAR}
+	</update>
+
+	<update id="update" parameterType="menu">
+		UPDATE t_menu
+		SET
+		<if test='menuName != null and menuName != ""'>
+			menu_name = #{menuName,jdbcType=VARCHAR},
+		</if>
+		<if test='menuNameKr != null and menuNameKr != ""'>
+			menu_name_kr = #{menuNameKr, jdbcType=VARCHAR},
+		</if>
+		<if test='menuUrl != null and menuUrl != ""'>
+			menu_url = #{menuUrl, jdbcType=VARCHAR},
+		</if>
+		<if test='orderNumber != null and orderNumber != ""'>
+			order_number = #{orderNumber, jdbcType=INTEGER},
+		</if>
+		<if test='parentSeq != null and parentSeq != 0'>
+			parent_seq = #{parentSeq, jdbcType=INTEGER},
+		</if>
+		<if test='positionType != null and positionType != ""'>
+			position_type = #{positionType, jdbcType=VARCHAR},
+		</if>
+		<if test='menuType != null and menuType != ""'>
+			menu_type = #{menuType, jdbcType=VARCHAR},
+		</if>
+		<if test='useYn != null and useYn != ""'>
+			use_yn = #{useYn,jdbcType=VARCHAR},
+		</if>
+		<if test='headerText != null and headerText != ""'>
+			header_text = #{headerText,jdbcType=VARCHAR},
+		</if>
+		<if test='showYn != null and showYn != ""'>
+			show_yn = #{showYn,jdbcType=VARCHAR},
+		</if>
+		<if test='authYn != null and authYn != ""'>
+			auth_yn = #{authYn,jdbcType=VARCHAR},
+		</if>
+		<if test='menuId != null and menuId != ""'>
+			menu_id = #{menuId,jdbcType=VARCHAR},
+		</if>
+		<if test='adminMenuYn != null and adminMenuYn != ""'>
+       		admin_menu_yn = #{adminMenuYn},
+       	</if>
+       	<if test="fileGroupSeq != null and fileGroupSeq != ''">
+            file_group_seq = #{fileGroupSeq,jdbcType=INTEGER},
+        </if>
+		<if test='modifiedBy != null and modifiedBy != ""'>
+			modified_by = #{modifiedBy,jdbcType=VARCHAR},
+		</if>
+		modified_date = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+		WHERE seq = #{seq}
+	</update>
+
+
+	<select id="getWebMenuList" resultMap="menuMap">
+		WITH RECURSIVE R AS
+        (
+             SELECT 1 DEPTH
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = 0
+            UNION ALL
+             SELECT DEPTH + 1
+                  , A.seq
+                  , A.menu_name
+                  , A.menu_url
+                  , A.position_type
+                  , A.menu_type
+                  , A.parent_seq
+                  , A.order_number
+                  , A.header_text
+                  , A.use_yn
+                  , A.show_yn
+                  , A.auth_yn
+                  , A.menu_id
+                  , A.admin_menu_yn
+                  , A.created_by
+                  , DATE_FORMAT(A.created_date, '%Y-%m-%d %H:%i:%s') created_date
+                  , A.modified_by AS CHILD_modified_by
+                  , DATE_FORMAT(A.modified_date, '%Y-%m-%d %H:%i:%s') modified_date
+              FROM t_menu A
+                 , R
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = R.seq
+        )
+        SELECT R.*
+        FROM R
+        WHERE 1 = 1
+        	AND IFNULL(R.show_yn, 'N') = 'Y'
+        	AND R.admin_menu_yn = 'N'
+        	ORDER BY R.parent_Seq, R.order_number ASC
+	</select>
+	
+	<select id="getMenuByDepth" resultMap="menuMap">
+		WITH RECURSIVE R AS
+        (
+             SELECT 1 DEPTH
+                  , A.seq
+                  , A.parent_seq
+                  , A.menu_id
+                  , A.admin_menu_yn
+              FROM t_menu A
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = 0 AND A.admin_menu_yn = #{adminMenuYn}
+    
+            UNION ALL
+    
+             SELECT DEPTH + 1
+                  , A.seq
+                  , A.parent_seq
+                  , A.menu_id
+                  , A.admin_menu_yn
+              FROM t_menu A
+                 , R
+            WHERE IFNULL(is_deleted, 'N') = 'N'
+              AND A.parent_seq = R.seq
+        )
+        SELECT R.*
+        FROM R
+        WHERE seq = 
+        	(SELECT MAX(seq) FROM R WHERE 1 = 1 AND R.admin_menu_yn = #{adminMenuYn}
+        		<if test='menuId != null and menuId != ""'>
+        			<choose>
+						<when test='menuId == "0"'>
+							AND R.parent_seq = 0
+						</when>
+						<otherwise>
+							AND R.parent_seq = (SELECT R.seq FROM R WHERE R.menu_id = #{menuId})							
+						</otherwise>
+					</choose>
+        		</if>) 
+	</select>
+	
+	<select id="getMenuListRole" resultMap="menuMap">
+		SELECT
+		      	  A.*
+				  ,(SELECT COUNT(B.menu_seq) FROM t_author_role B WHERE B.MENU_SEQ = A.SEQ AND B.AUTHOR_CD = #{authorCd}) AS SET_AT
+			FROM t_menu A
+			WHERE 
+				ADMIN_MENU_YN = 'Y'
+			  	AND IFNULL(USE_YN,'N') = 'Y'
+			 	AND A.IS_DELETED = 'N'
+		 	ORDER BY parent_seq, order_number;
+	</select>
+
+	<update id="updateMenuId" parameterType="menu">
+		update t_menu
+		set menu_id = #{menuId,jdbcType=VARCHAR},
+			parent_seq = #{parentSeq, jdbcType=INTEGER}
+		where seq = #{seq}
+	</update>
+</mapper>

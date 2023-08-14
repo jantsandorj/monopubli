@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.settings.service.SiteInfoMapper">
+
+	<resultMap id="baseResultMap" 		        type="siteInfo" extends="commonMapper.generalMap">
+		<id property="siteSeq" 					column="site_seq" />
+		<result property="siteNm"	 			column="site_nm" />
+		<result property="siteUrl"	 			column="site_url" />
+		<result property="contactTel" 			column="contact_tel" />
+		<result property="contactEmail" 		column="contact_email" />
+		<result property="contactMobile" 		column="contact_mobile" />
+		<result property="zip" 					column="zip" />
+		<result property="addr" 			    column="addr" />
+		<result property="addrEtc" 			    column="addr_etc" />
+		<result property="copyright" 			column="copyright" />
+		<result property="favFileGroupSeq" 		column="fav_file_group_seq" />
+		<result property="headerFileGroupSeq" 	column="header_file_group_seq" />
+		<result property="footerFileGroupSeq" 	column="footer_file_group_seq" />
+		<result property="footerContent" 		column="footer_content" />
+		<result property="termsUse" 			column="terms_use" />
+		<result property="privacyPolicy" 		column="privacy_policy" />
+		<result property="modifiedBy" 			column="modified_by" />
+	</resultMap>
+    
+    <resultMap id="nestedResultMap" type="siteInfo" extends="baseResultMap">
+		<collection property="atchFav" columnPrefix="FAV_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+		<collection property="atchHeader" columnPrefix="HEAD_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+		<collection property="atchFooter" columnPrefix="FOOT_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+	
+	
+    
+    <select id="getSiteInfo" resultMap="nestedResultMap">
+        SELECT A.*,
+        	F.file_seq AS FAV_file_id, 
+			F.file_group_seq AS FAV_file_grp_id, 
+			F.file_name AS FAV_file_nm, 
+			F.file_ext AS FAV_file_ext, 
+			F.file_size AS FAV_file_size,  
+			F.stored_file_name AS FAV_stored_nm, 
+			F.view_url AS FAV_url, 
+			F.stored_path AS FAV_stored_path, 
+			F.download_url AS FAV_download_url,
+			F.delete_url AS FAV_delete_url,
+			
+			F2.file_seq AS HEAD_file_id, 
+			F2.file_group_seq AS HEAD_file_grp_id, 
+			F2.file_name AS HEAD_file_nm, 
+			F2.file_ext AS HEAD_file_ext, 
+			F2.file_size AS HEAD_file_size,  
+			F2.stored_file_name AS HEAD_stored_nm, 
+			F2.view_url AS HEAD_url, 
+			F2.stored_path AS HEAD_stored_path, 
+			F2.download_url AS HEAD_download_url, 
+			F2.delete_url AS HEAD_delete_url,
+			
+			F3.file_seq AS FOOT_file_id, 
+			F3.file_group_seq AS FOOT_file_grp_id, 
+			F3.file_name AS FOOT_file_nm, 
+			F3.file_ext AS FOOT_file_ext, 
+			F3.file_size AS FOOT_file_size,  
+			F3.stored_file_name AS FOOT_stored_nm, 
+			F3.view_url AS FOOT_url, 
+			F3.stored_path AS FOOT_stored_path, 
+			F3.download_url AS FOOT_download_url, 
+			F3.delete_url AS FOOT_delete_url
+        FROM 
+        	t_site_info A
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = A.fav_file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+		LEFT JOIN 
+			t_file F2 ON F2.file_group_seq = A.header_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+		LEFT JOIN 
+			t_file F3 ON F3.file_group_seq = A.footer_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+        WHERE A.site_seq = '1'
+    </select>
+    
+    
+
+    <update id="update">
+        UPDATE t_site_info
+        SET
+        <if test='siteNm != null'>
+            site_nm = #{siteNm,jdbcType=VARCHAR},
+        </if>
+        <if test='siteUrl != null'>
+            site_url = #{siteUrl,jdbcType=VARCHAR},
+        </if>
+        <if test='contactTel != null'>
+            contact_tel = #{contactTel,jdbcType=VARCHAR},
+        </if>
+        <if test='contactEmail != null'>
+            contact_email = #{contactEmail,jdbcType=VARCHAR},
+        </if>
+        <if test='contactMobile != null'>
+            contact_mobile = #{contactMobile,jdbcType=VARCHAR},
+        </if>
+        <if test='zip != null'>
+            zip = #{zip,jdbcType=VARCHAR},
+        </if>
+        <if test='addr != null'>
+            addr = #{addr,jdbcType=INTEGER},
+        </if>
+        <if test='addrEtc != null'>
+            addr_etc = #{addrEtc,jdbcType=VARCHAR},
+        </if>
+        <if test='copyright != null'>
+            copyright = #{copyright,jdbcType=VARCHAR},
+        </if>
+        <if test='favFileGroupSeq != null and favFileGroupSeq != ""'>
+            fav_file_group_seq = #{favFileGroupSeq,jdbcType=VARCHAR},
+        </if>
+        <if test='headerFileGroupSeq != null and headerFileGroupSeq != ""'>
+            header_file_group_seq = #{headerFileGroupSeq,jdbcType=VARCHAR},
+        </if>
+        <if test='footerFileGroupSeq != null and footerFileGroupSeq != ""'>
+            footer_file_group_seq = #{footerFileGroupSeq,jdbcType=VARCHAR},
+        </if>
+        <if test='footerContent != null'>
+            footer_content = #{footerContent,jdbcType=VARCHAR},
+        </if>
+        <if test='termsUse != null'>
+            terms_use = #{termsUse,jdbcType=VARCHAR},
+        </if>
+        <if test='privacyPolicy != null'>
+            privacy_policy = #{privacyPolicy,jdbcType=VARCHAR},
+        </if>
+        <if test='modifiedBy != null and modifiedBy != ""'>
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE site_seq = '1'
+    </update>
+    
+</mapper>

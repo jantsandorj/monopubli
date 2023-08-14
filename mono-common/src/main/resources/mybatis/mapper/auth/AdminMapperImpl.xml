@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.auth.service.AdminMapper">
+    
+    <resultMap id="adminMap" type="admin" extends="commonMapper.generalMap">
+    	<id 	property="seq" 						column="seq" />
+    	<result property="username" 				column="username" />
+    	<result property="password"					column="password" />
+    	<result property="fullname"					column="fullname" />
+    	<result property="email"					column="email" />
+    	<result property="phone"					column="phone" />
+    	<result property="lastLoginDate"			column="last_login_date" />
+    	<result property="failedLoginCount"			column="failed_login_count" />
+		<result property="tempPwd"					column="temp_pwd" />
+		<result property="tempPwdCreDt"				column="temp_pwd_cre_dt" />
+		<result property="tempPwdEndDt"				column="temp_pwd_end_dt" />
+		<result property="fileGroupSeq" 			column="file_group_seq" />
+		<result property="useYn" 					column="use_yn" />
+		<result property="taskInCharge" 			column="task_in_charge" />
+		<result property="mobile" 					column="mobile" />
+		<result property="authorCd" 				column="author_cd"/>
+		<result property="countryCd" 				column="country_cd"/>
+		<result property="levelCd" 				    column="level_cd"/>
+		<result property="positionCd" 				column="position_cd"/>
+		<result property="adminNote" 				column="admin_note"/>
+		<result property="adminType" 				column="admin_type"/>
+		<result property="projectNum" 				column="project_num"/>
+    </resultMap>
+    
+    <resultMap id="nestedResultMap" type="admin" extends="adminMap">
+		<collection property="imageAtch" columnPrefix="IMG_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+		<collection property="skillList" ofType="code"    column="seq"    select="kr.co.tagoplus.code.service.CodeMapper.getByAdminSeq" />
+	</resultMap>
+
+	<sql id="whereQuery">
+		a.is_deleted = 'N'
+		<if test="searchWrd != null and searchWrd != ''">
+			<if test="searchCondition == 'ALL'">
+				AND (a.username LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%') || a.fullname LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%'))
+			</if>
+			<if test="searchCondition == 'fullname'">
+				AND (a.fullname LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%'))
+			</if>
+		</if>
+		<if test="useYn != null and useYn != ''">
+			AND a.use_yn = #{useYn}
+		</if>
+		<if test="levelCd != null and levelCd != ''">
+			AND a.level_cd = #{levelCd}
+		</if>
+		<if test="positionCd != null and positionCd != ''">
+			AND a.position_cd = #{positionCd}
+		</if>
+		<if test="countryCd != null and countryCd != ''">
+			AND a.country_cd = #{countryCd}
+		</if>
+		<if test="adminType != null and adminType != ''">
+			AND a.admin_type = #{adminType}
+		</if>
+		<if test="skillCd != null and skillCd != ''">
+			AND b.skill_cd = #{skillCd}
+		</if>
+
+	</sql>
+
+	<sql id="column">
+    	seq, username, password, fullname, email, phone, last_login_date, failed_login_count, temp_pwd, temp_pwd_cre_dt, temp_pwd_end_dt, created_date, created_by, modified_date, modified_by, is_deleted, author_cd, use_yn, country_cd, level_cd, admin_note, position_cd
+    </sql>  
+    
+    <sql id="nestedColumn">
+    	a.seq, a.username, a.password, a.fullname, a.email, a.phone, a.last_login_date, a.failed_login_count, a.created_date, a.created_by, a.modified_date, a.modified_by, a.is_deleted
+    </sql> 
+    
+    <select id="authenticate" resultMap="adminMap">
+    	SELECT *
+		FROM t_admin
+		WHERE username = #{username}
+    </select>
+    
+    <select id="getByUsername" resultMap="adminMap">
+    	SELECT <include refid="column" />
+		FROM t_admin
+		WHERE username = #{username} AND is_deleted = 'N'
+    </select>
+
+	<select id="getByEmail" resultMap="adminMap">
+		SELECT <include refid="column" />
+		FROM t_admin
+		WHERE email = #{email}
+	</select>
+
+	<select id="getAll" resultMap="adminMap">
+    	SELECT *
+		FROM t_admin
+		WHERE is_deleted = 'N'
+    </select>
+
+	<select id="getAllAdminCounts" resultType="integer">
+    	SELECT COUNT(1)
+		FROM t_admin
+		WHERE is_deleted = 'N'
+    </select>
+
+	<select id="getOnlineAdminCounts" parameterType="string" resultType="integer">
+    	SELECT COUNT(1)
+		FROM t_admin
+		WHERE is_deleted = 'N'
+		<![CDATA[
+			AND last_login_date > #{validDate,jdbcType=VARCHAR}
+		]]>
+    </select>
+
+	<select id="getByFilter" parameterType="map" resultMap="adminMap">
+		SELECT a.*
+		FROM t_admin a
+		<where>
+			<include refid="whereQuery" />
+		</where>
+		<choose>
+			<when test="page.sort.sorted == true">
+				ORDER BY
+				<foreach collection="page.sort.orders" item="sortOrder" separator=",">
+					${sortOrder.property} ${sortOrder.direction.name}
+				</foreach>
+			</when>
+			<otherwise>
+				ORDER BY a.seq DESC
+			</otherwise>
+		</choose>
+		<include refid="commonMapper.pagingQuery" />
+	</select>
+	
+	<select id="getById" resultMap="nestedResultMap">
+        SELECT A.*,
+        	F.file_seq AS IMG_file_id, 
+			F.file_group_seq AS IMG_file_grp_id, 
+			F.file_name AS IMG_file_nm, 
+			F.file_ext AS IMG_file_ext, 
+			F.file_size AS IMG_file_size, 
+			F.created_date AS IMG_create_dt, 
+			F.stored_file_name AS IMG_stored_nm, 
+			F.view_url AS IMG_url, 
+			F.stored_path AS IMG_stored_path, 
+			F.download_url AS IMG_download_url, 
+			F.delete_url AS IMG_delete_url, 
+			F.is_deleted AS IMG_is_deleted
+        FROM 
+        	t_admin A
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = A.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        WHERE A.is_deleted = 'N' AND A.seq = #{seq, jdbcType=VARCHAR}
+    </select>
+
+	<select id="getManagerListByPosition" parameterType="map" resultType="admin" resultMap="nestedResultMap">
+		SELECT
+		    a.*
+		FROM t_admin a
+		<where>
+			<include refid="whereQuery" />
+		</where>
+        ORDER BY a.fullname
+	</select>
+
+
+	<select id="getWorkerListByPosition" parameterType="java.util.Map"  resultMap="nestedResultMap">
+		SELECT TB.*
+		FROM (
+			SELECT
+				a.*,
+				count(DISTINCT p.seq) AS PROJECT_NUM
+			FROM t_admin a
+			LEFT JOIN project_item_admin pia ON pia.admin_seq = a.seq
+			LEFT JOIN t_project p ON p.seq = pia.project_seq AND p.status_cd = 'I'
+				<where>
+					<include refid="whereQuery" />
+				</where>
+			GROUP BY a.seq
+			ORDER BY a.fullname
+		) TB
+		<if test="hasProject != '' and hasProject != null">
+			<if test="hasProject == 'false'">
+				<![CDATA[ WHERE TB.PROJECT_NUM = 0 	]]>
+			</if>
+			<if test="hasProject == 'true'">
+				<![CDATA[ WHERE TB.PROJECT_NUM > 0 ]]>
+			</if>
+		</if>
+	</select>
+
+	<select id="existById" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_admin
+        WHERE is_deleted = 'N' AND seq = #{seq, jdbcType=VARCHAR}
+    </select>
+    
+    <select id="existByUsername" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_admin
+        WHERE is_deleted = 'N' AND username = #{username}
+    </select>
+    
+    <select id="existByEmail" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_admin
+        WHERE is_deleted = 'N' AND email = #{email}
+    </select>
+    
+    <select id="existByPhone" resultType="boolean">
+        SELECT COUNT(seq) > 0
+        FROM t_admin
+        WHERE is_deleted = 'N' AND phone = #{phone}
+    </select>
+
+	<select id="countByFilter" parameterType="java.util.Map" resultType="long">
+		SELECT count(a.seq)
+		FROM t_admin a
+		<where>
+			<include refid="whereQuery" />
+		</where>
+	</select>
+
+	<insert id="insert" useGeneratedKeys="true" keyProperty="seq" parameterType="admin">
+    	INSERT INTO t_admin (
+    		username,
+    		password,
+    		fullname,
+    		email,
+    		phone,
+    		last_login_date,
+    		failed_login_count,
+    		created_date,
+    		created_by,
+    		is_deleted,
+    		file_group_seq,
+    		use_yn,
+    		mobile,
+    		task_in_charge,
+    		author_cd,
+    	    country_cd,
+    	    level_cd,
+    	    position_cd,
+    	    admin_note,
+    	    admin_type
+    	) VALUES (
+    		#{email},
+    		#{password},
+    		#{fullname},
+    		#{email},
+    		#{phone},
+    		#{lastLoginDate},
+    		#{failedLoginCount},
+    		#{createdDate},
+    		#{createdBy},
+    		'N',
+    		#{fileGroupSeq},
+    		#{useYn},
+    		#{mobile},
+    		#{taskInCharge},
+    		#{authorCd},
+		    #{countryCd},
+		    #{levelCd},
+		    #{positionCd},
+		    #{adminNote},
+		    #{adminType}
+    	)
+    </insert>
+
+    <update id="deleteById">
+    	UPDATE t_admin 
+    	SET is_deleted = 'Y'
+    	WHERE seq = #{seq, jdbcType=VARCHAR}
+    </update>
+    
+
+	<update id="update" parameterType="admin">
+		UPDATE t_admin
+		SET
+		<if test = "email != null and email != ''">
+			username = #{email,jdbcType = VARCHAR},
+		</if>
+		<if test = "password != null and password != ''">
+			password = #{password,jdbcType = VARCHAR},
+		</if>
+		<if test = "fullname != null and fullname != ''">
+			fullname = #{fullname,jdbcType = VARCHAR},
+		</if>
+		<if test = "lastLoginDate != null and lastLoginDate != ''">
+			last_login_date = #{lastLoginDate,jdbcType = VARCHAR},
+		</if>		
+		<if test = "email != null and email != ''">
+			email = #{email,jdbcType = VARCHAR},
+		</if>
+		<if test = "tempPwd != null and tempPwd != ''">
+			temp_pwd = #{tempPwd,jdbcType = VARCHAR},
+		</if>
+		<if test = "tempPwdCreDt != null and tempPwdCreDt != ''">
+			temp_pwd_cre_dt = #{tempPwdCreDt,jdbcType = VARCHAR},
+		</if>
+		<if test="tempPwdEndDt != null and tempPwdEndDt != ''">
+			temp_pwd_end_dt = #{tempPwdEndDt,jdbcType = VARCHAR},
+		</if>
+		<if test="fileGroupSeq != null and fileGroupSeq != ''">
+			file_group_seq = #{fileGroupSeq,jdbcType = INTEGER},
+		</if>
+		<if test="useYn != null and useYn != ''">
+			use_yn = #{useYn,jdbcType = VARCHAR},
+		</if>
+		<if test="mobile != null and mobile != ''">
+			mobile = #{mobile, jdbcType = VARCHAR},
+		</if>
+		<if test="phone != null and phone != ''">
+			phone = #{phone, jdbcType = VARCHAR},
+		</if>
+		<if test="taskInCharge != null and taskInCharge != ''">
+			task_in_charge = #{taskInCharge,jdbcType = VARCHAR},
+		</if>
+		<if test="authorCd != null and authorCd != ''">
+			author_cd = #{authorCd,jdbcType = VARCHAR},
+		</if>
+		<if test="countryCd != null and countryCd != ''">
+			country_cd = #{countryCd,jdbcType = VARCHAR},
+		</if>
+		<if test="levelCd != null and levelCd != ''">
+			level_cd = #{levelCd,jdbcType = VARCHAR},
+		</if>
+		<if test="adminNote != null and adminNote != ''">
+			admin_note = #{adminNote,jdbcType = VARCHAR},
+		</if>
+		<if test="positionCd != null and positionCd != ''">
+			position_cd = #{positionCd,jdbcType = VARCHAR},
+		</if>
+		modified_date = #{modifiedDate,jdbcType = VARCHAR}
+		WHERE
+		seq = #{seq, jdbcType=VARCHAR}
+	</update>
+
+	<update id="updateLastLoginDate">
+    	UPDATE t_admin
+    	SET last_login_dt = #{loginDate}
+    	WHERE user_id = #{username}
+    </update>
+
+	<insert id="insertSkill" >
+		INSERT INTO admin_skill (
+			admin_seq,
+			skill_seq
+		) VALUES (
+			 #{seq},
+			 #{skill}
+		 )
+	</insert>
+
+	<delete id="deleteSkill">
+		DELETE FROM admin_skill
+        WHERE admin_seq = #{seq}
+	</delete>
+
+	<select id="getManagerByProjectSeq" resultMap="adminMap">
+		SELECT A.*
+		FROM t_admin A
+		 LEFT JOIN project_admin P ON P.admin_seq = A.seq
+		WHERE P.project_seq = #{seq}
+	</select>
+
+	<select id="getWorkerByProjectSeq" resultMap="adminMap">
+		SELECT A.*
+		FROM t_admin A
+		LEFT JOIN project_item_admin P ON P.admin_seq = A.seq
+		WHERE P.project_seq = #{seq}
+	</select>
+
+</mapper>

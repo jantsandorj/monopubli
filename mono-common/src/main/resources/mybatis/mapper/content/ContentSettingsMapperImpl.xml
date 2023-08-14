@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.content.service.ContentSettingsMapper">
+
+	<resultMap id="baseResultMap" 		        type="contentSettings" extends="commonMapper.generalMap">
+		<id property="code" 					column="code" />
+        <result property="contentType"       	column="content_type" />
+        <result property="name"       	        column="name" />
+		<result property="title"     			column="title" />
+		<result property="url"  			    column="url" />
+		<result property="useYn"     			column="use_yn" />
+        <result property="isDeleted"     	    column="is_deleted" />
+        <result property="content"     	    	column="content" />
+        <result property="createdBy"     	    column="created_by" />
+        <result property="fieldsJson"     	    column="fields_json" />
+	</resultMap>
+	
+	<resultMap id="nestedResultMap" type="contentSettings" extends="baseResultMap">
+		<collection property="attachments" columnPrefix="ATCH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		CS.is_deleted = 'N'  
+    	<if test="code != null and code != ''">
+   			AND LOWER(CS.code) = LOWER(#{code})
+        </if>
+        <if test="type != null and type != ''">
+            AND LOWER(CS.content_type) = LOWER(#{type})
+        </if>
+        <if test="searchWrd != null and searchWrd != ''">
+            AND LOWER(title->"$.*") LIKE CONCAT('%',#{searchWrd},'%')
+        </if>
+        <if test="excludedCode != null and excludedCode != ''">
+            --  used when need to check except of self
+            AND	LOWER(code) <![CDATA[<>]]> LOWER(#{excludedCode})
+        </if>
+    </sql>
+    
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT CS.*
+        FROM t_content_settings CS
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page != null and page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY CS.code ASC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT CS.*
+        FROM t_content_settings CS 
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY CS.code ASC
+    </select>
+
+    <select id="getById" resultMap="nestedResultMap">
+        SELECT C.*,
+        	F.file_seq AS ATCH_file_id, 
+			F.file_group_seq AS ATCH_file_grp_id, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.file_size AS ATCH_file_size, 
+			F.created_date AS ATCH_create_dt, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url, 
+			F.is_deleted AS ATCH_is_deleted
+        FROM 
+        	t_content_settings C
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = C.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        WHERE LOWER(C.code) = LOWER(#{code,jdbcType=VARCHAR})
+    </select>
+    
+    <select id="getByBulk" resultMap="nestedResultMap">
+        SELECT C.*,
+        	F.file_seq AS ATCH_file_id, 
+			F.file_group_seq AS ATCH_file_grp_id, 
+			F.file_name AS ATCH_file_nm, 
+			F.file_ext AS ATCH_file_ext, 
+			F.file_size AS ATCH_file_size, 
+			F.created_date AS ATCH_create_dt, 
+			F.stored_file_name AS ATCH_stored_nm, 
+			F.view_url AS ATCH_url, 
+			F.stored_path AS ATCH_stored_path, 
+			F.download_url AS ATCH_download_url, 
+			F.delete_url AS ATCH_delete_url, 
+			F.is_deleted AS ATCH_is_deleted
+        FROM 
+        	t_content_settings C 
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = C.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        WHERE LOWER(C.code) IN (
+            <foreach collection="ids" item="id" separator=",">
+                LOWER(#{id, jdbcType=VARCHAR})
+            </foreach>
+        )
+        
+    </select>
+    
+    <select id="countByFilter" parameterType="map" resultType="long">
+        SELECT count(1)
+        FROM t_content_settings CS
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="contentSettings">
+        INSERT INTO t_content_settings (
+            code,
+            content_type,
+            name,
+            menu_seq,
+            title,
+            url,
+            content,
+            use_yn,
+            created_by,
+            created_ip,
+            created_date,
+            file_group_seq
+		) VALUES (
+			#{code, jdbcType=VARCHAR},
+			#{contentType, jdbcType=VARCHAR},
+			#{name, jdbcType=VARCHAR},
+			#{menuSeq, jdbcType=INTEGER},
+			#{title, jdbcType=VARCHAR},
+			#{url, jdbcType=VARCHAR},
+			#{content, jdbcType=VARCHAR},
+			#{useYn, jdbcType=VARCHAR},
+			#{createdBy, jdbcType=VARCHAR},
+			#{createdIp, jdbcType=VARCHAR},
+			#{createdDate, jdbcType=VARCHAR},
+			#{fileGroupSeq, jdbcType=INTEGER} 
+		)
+    </insert>
+
+    <insert id="insertByBulk" parameterType="java.util.Map">
+
+    </insert>
+
+    <update id="update">
+        UPDATE t_content_settings
+        SET
+        <if test="contentType != null">
+            content_type = #{contentType},
+        </if>
+        <if test="name != null">
+            name = #{name},
+        </if>
+        <if test="menuSeq != null">
+            menu_seq = #{menuSeq},
+        </if>
+        <if test="title != null">
+            title = #{title},
+        </if>
+        <if test="url != null">
+            url = #{url},
+        </if>
+        <if test="useYn != null">
+            use_yn = #{useYn},
+        </if>
+        <if test="content != null">
+            content = #{content},
+        </if>
+        <if test="modifiedBy != null">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedIp != null">
+            modified_ip = #{modifiedIp,jdbcType=VARCHAR},
+        </if>
+        <if test="fileGroupSeq != null">
+            file_group_seq = #{fileGroupSeq,jdbcType=VARCHAR},
+        </if>
+        <if test="fieldsJson != null">
+            fields_json = #{fieldsJson,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE LOWER(code) = LOWER(#{code,jdbcType=VARCHAR})
+    </update>
+
+    <update id="deleteById" parameterType="String">
+		UPDATE t_content_settings
+		SET	IS_DELETED = 'Y',
+		CODE = CONCAT(CODE, '_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s'))
+		WHERE LOWER(code) = LOWER(#{code,jdbcType=VARCHAR})
+	</update>
+    
+</mapper>

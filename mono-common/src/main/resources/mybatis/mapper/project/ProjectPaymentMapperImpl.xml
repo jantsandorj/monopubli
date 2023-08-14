@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.project.service.ProjectPaymentMapper">
+
+    <resultMap id="projectPaymentMap" type="projectPayment"     extends="commonMapper.generalMap">
+        <id 	property="seq" 				        column="seq" />
+        <result property="projectSeq" 			    column="project_seq" />
+        <result property="paymentType" 		        column="payment_type" />
+        <result property="price"    			    column="price" />
+        <result property="netPrice" 			    column="net_price" />
+        <result property="description"			    column="description" />
+        <result property="estimatedDate"			column="estimated_date" />
+        <result property="actualDate"   			column="actual_date" />
+        <result property="paymentStatus"   			column="payment_status" />
+        <result property="situation"   			    column="situation" />
+        <result property="createdBy"		        column="created_by" />
+        <result property="createdDate"		        column="created_date" />
+        <result property="modifiedBy"		        column="modified_by" />
+        <result property="modifiedDate"		        column="modified_date" />
+        <result property="isDeleted"		        column="is_deleted" />
+    </resultMap>
+
+    <select id="getByProjectSeq" resultMap="projectPaymentMap">
+        SELECT A.*
+        FROM t_project_payment A
+        WHERE A.is_deleted = 'N' AND A.project_seq = #{projectSeq, jdbcType=INTEGER}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="seq" parameterType="projectItem">
+        INSERT INTO t_project_payment (
+            project_seq,
+            payment_type,
+            price,
+            net_price,
+            description,
+            estimated_date,
+            actual_date,
+            created_by,
+            created_date
+            <if test="actualDate != null and actualDate != ''">
+                ,payment_status
+            </if>
+        ) VALUES (
+             #{projectSeq},
+             #{paymentType},
+             #{price},
+             #{netPrice},
+             #{description},
+             #{estimatedDate},
+             #{actualDate},
+             #{createdBy},
+             DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+            <if test="actualDate != null and actualDate != ''">
+                ,'C'
+            </if>
+        )
+    </insert>
+
+    <delete id="deleteById">
+        UPDATE t_project_payment
+        SET is_deleted = 'Y'
+        WHERE seq = #{seq}
+    </delete>
+
+    <delete id="deleteByProjectSeq">
+        DELETE FROM t_project_payment
+        WHERE project_seq = #{projectSeq}
+    </delete>
+
+    <update id="update" parameterType="projectPayment">
+        UPDATE t_project_payment
+        SET
+            <if test="projectSeq != null and projectSeq != ''">
+                project_seq = #{projectSeq,jdbcType=VARCHAR},
+            </if>
+            <if test="paymentType != null and paymentType != ''">
+                payment_type = #{paymentType,jdbcType=VARCHAR},
+            </if>
+            <if test="price != null and price != ''">
+                price = #{price,jdbcType=VARCHAR},
+            </if>
+            <if test="netPrice != null and netPrice != ''">
+                net_price = #{netPrice,jdbcType=VARCHAR},
+            </if>
+            <if test="description != null and description != ''">
+                description = #{description,jdbcType=VARCHAR},
+            </if>
+            <if test="estimatedDate != null and estimatedDate != ''">
+                estimated_date = #{estimatedDate,jdbcType=VARCHAR},
+            </if>
+            <if test="actualDate != null and actualDate != ''">
+                actual_date = #{actualDate,jdbcType=VARCHAR},
+            </if>
+            <if test="paymentStatus != null and paymentStatus != ''">
+                payment_status = #{paymentStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="situation != null and situation != ''">
+                situation = #{situation,jdbcType=VARCHAR},
+            </if>
+            <if test="modifiedBy != null and modifiedBy != ''">
+                modified_by = #{modifiedBy,jdbcType=VARCHAR},
+            </if>
+            modified_date = #{modifiedDate,jdbcType = VARCHAR}
+        WHERE seq = #{seq, jdbcType=VARCHAR}
+    </update>
+
+    <update id="updateProjectSituation" parameterType="project">
+        UPDATE t_project_payment
+        SET
+        <if test="situation != null and situation != ''">
+            situation = #{situation,jdbcType = VARCHAR},
+        </if>
+        <if test = "modifiedBy != null and modifiedBy != ''">
+            modified_by = #{modifiedBy,jdbcType = INTEGER},
+        </if>
+        modified_date = #{modifiedDate,jdbcType = VARCHAR}
+        WHERE seq = #{seq, jdbcType=INTEGER}
+    </update>
+
+    <select id="getPaymentTaxStats" resultType="Map">
+        SELECT
+            IFNULL(SUM(CASE WHEN P.payment_type = 'D' THEN P.price END), 0) AS down_tax,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'D' THEN 1 END), 0) AS down_project_counts,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'M' THEN P.price END), 0) AS middle_tax,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'M' THEN 1 END), 0) AS middle_project_counts,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'B' THEN P.price END), 0) AS balance_tax,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'B' THEN 1 END), 0) AS balance_project_counts
+        FROM t_project_payment P
+        WHERE P.estimated_date IS NOT NULL AND P.estimated_date != ''
+    </select>
+
+    <select id="getPaymentReceivableStats" resultType="Map">
+        SELECT
+            IFNULL(SUM(CASE WHEN P.payment_type = 'D' AND (P.actual_date IS NULL OR P.actual_date = '') THEN P.price END), 0) AS down_receivable,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'D' AND (P.actual_date IS NULL OR P.actual_date = '') THEN 1 ELSE 0 END), 0 ) AS down_project_counts,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'M' AND (P.actual_date IS NULL OR P.actual_date = '') THEN P.price END), 0) AS middle_receivable,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'M' AND (P.actual_date IS NULL OR P.actual_date = '') THEN 1 ELSE 0 END), 0 ) AS middle_project_counts,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'B' AND (P.actual_date IS NULL OR P.actual_date = '') THEN P.price END), 0) AS balance_receivable,
+            IFNULL(SUM(CASE WHEN P.payment_type = 'B' AND (P.actual_date IS NULL OR P.actual_date = '') THEN 1 ELSE 0 END), 0) AS balance_project_counts
+        FROM t_project_payment P
+        WHERE P.estimated_date IS NOT NULL AND P.estimated_date != '';
+    </select>
+
+</mapper>

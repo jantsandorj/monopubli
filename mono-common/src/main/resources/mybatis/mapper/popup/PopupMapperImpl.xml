@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.tagoplus.popup.service.PopupMapper">
+
+   <resultMap id="baseResultMap" 		        type="popup" extends="commonMapper.generalMap">
+		<id property="seq" 				    	column="seq" />
+        <result property="subject"              column="subject" />
+        <result property="content"              column="content" />
+        <result property="popupType"            column="popup_type" />
+        <result property="linkYn" 	        	column="link_yn" />
+        <result property="windowYn" 	        column="window_yn" />
+        <result property="linkUrl" 	            column="link_url" />
+        <result property="pcFileGroupSeq" 		column="pc_file_group_seq" />
+        <result property="mobileFileGroupSeq" 	column="mobile_file_group_seq" />
+        <result property="imageDesc" 	        column="image_desc" />
+        <result property="positionX" 	        column="position_x" />
+        <result property="positionY" 	        column="position_y" />
+        <result property="height" 	        	column="height" />
+        <result property="width" 	        	column="width" />
+        <result property="startDate" 	        column="start_date" />
+        <result property="endDate" 	            column="end_date" />
+        <result property="sortNo" 			    column="sort_no" />
+        <result property="useYn" 				column="use_yn" />
+        <result property="isDeleted"     	    column="is_deleted" />
+        <result property="createdDate"			column="created_date" />
+		<result property="createdBy"			column="created_by" />
+		<result property="modifiedDate"			column="modified_date" />
+		<result property="modifiedBy"			column="modified_by" />
+        <result property="popupTypeNm" 		    column="popup_type_nm" />
+	</resultMap>
+	
+	<resultMap id="nestedResultMap" type="popup" extends="baseResultMap">
+		<collection property="pcImageAtch" columnPrefix="PC_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+		<collection property="mobileImageAtch" columnPrefix="MOBILE_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		C.is_deleted = 'N'
+<!--   		<if test='filterUser != null and filterUser == "Y"'>-->
+<!--   			AND C.use_yn = 'Y'-->
+<!--   			AND NOW() BETWEEN C.start_date AND C.end_date-->
+<!--   		</if>-->
+        <if test='useYn != null and useYn != ""'>
+            AND C.use_yn = #{useYn}
+            <!-- AND	now() <![CDATA[>=]]> DATE_FORMAT(C.start_date, '%Y-%m-%d 00:00:00') AND now() <![CDATA[<=]]> DATE_FORMAT(C.end_date, '%Y-%m-%d 23:59:59') -->
+        </if>
+        <if test="searchWrd != null and searchWrd != ''">
+            AND subject LIKE CONCAT('%', #{searchWrd,jdbcType=VARCHAR}, '%')
+        </if>
+    </sql>
+
+    <select id="getById" resultMap="nestedResultMap">
+        SELECT P.*,
+        	F.file_seq AS PC_file_id,
+			F.file_group_seq AS PC_file_grp_id,
+			F.file_name AS PC_file_nm,
+			F.file_ext AS PC_file_ext,
+			F.file_size AS PC_file_size,
+			F.created_date AS PC_create_dt,
+			F.stored_file_name AS PC_stored_nm,
+			F.view_url AS PC_url,
+			F.stored_path AS PC_stored_path,
+			F.download_url AS PC_download_url,
+			F.delete_url AS PC_delete_url,
+			F.is_deleted AS PC_is_deleted,
+			F2.file_seq AS MOBILE_file_id,
+			F2.file_group_seq AS MOBILE_file_grp_id,
+			F2.file_name AS MOBILE_file_nm,
+			F2.file_ext AS MOBILE_file_ext,
+			F2.file_size AS MOBILE_file_size,
+			F2.created_date AS MOBILE_create_dt,
+			F2.stored_file_name AS MOBILE_stored_nm,
+			F2.view_url AS MOBILE_url,
+			F2.stored_path AS MOBILE_stored_path,
+			F2.download_url AS MOBILE_download_url,
+			F2.delete_url AS MOBILE_delete_url,
+			F2.is_deleted AS MOBILE_is_deleted,
+			TC.code_eng_nm  as POPUP_TYPE_NM
+        FROM
+        	t_popup P
+        LEFT JOIN
+			t_file F ON F.file_group_seq = P.pc_file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+		LEFT JOIN
+			t_file F2 ON F2.file_group_seq = P.mobile_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+		LEFT JOIN
+            t_code TC on TC.code = P.popup_type and IFNULL(TC.is_deleted, 'N') = 'N'
+        WHERE P.seq = #{seq}
+    </select>
+
+    <select id="getList" parameterType="java.util.Map" resultMap="nestedResultMap">
+        SELECT C.*,
+        F.file_name AS PC_file_nm,
+        F.view_url AS PC_url,
+        F2.file_name AS MOBILE_file_nm,
+        F2.view_url AS MOBILE_url
+        FROM
+        t_popup C
+        LEFT JOIN
+        t_file F ON F.file_group_seq = C.pc_file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        LEFT JOIN
+        t_file F2 ON F2.file_group_seq = C.mobile_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+        <where>
+            <include refid="whereQuery" />
+        </where>
+        ORDER BY C.seq DESC
+    </select>
+    <select id="getByLimit" parameterType="int" resultMap="nestedResultMap">
+        SELECT C.*,
+        F.file_name AS PC_file_nm,
+        F.view_url AS PC_url,
+        F2.file_name AS MOBILE_file_nm,
+        F2.view_url AS MOBILE_url,
+        TC.code_eng_nm  as POPUP_TYPE_NM
+        FROM
+        t_popup C
+        LEFT JOIN
+            t_file F ON F.file_group_seq = C.pc_file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+        LEFT JOIN
+            t_file F2 ON F2.file_group_seq = C.mobile_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+        LEFT JOIN
+            t_code TC on TC.code = C.popup_type and IFNULL(TC.is_deleted, 'N') = 'N'
+        WHERE C.is_deleted = 'N'
+        	AND C.use_yn = 'Y'
+			AND	now() <![CDATA[>=]]> DATE_FORMAT(C.start_date, '%Y-%m-%d 00:00:00') AND now() <![CDATA[<=]]> DATE_FORMAT(C.end_date, '%Y-%m-%d 23:59:59')
+        ORDER  BY
+        	C.sort_no DESC
+		LIMIT  0, 5;
+    </select>
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="nestedResultMap">
+        SELECT C.*,
+        	F.file_name AS PC_file_nm,
+        	F.view_url AS PC_url,
+        	F2.file_name AS MOBILE_file_nm,
+        	F2.view_url AS MOBILE_url,
+            TC.code_eng_nm  as POPUP_TYPE_NM
+        FROM 
+        	t_popup C
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = C.pc_file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+		LEFT JOIN 
+			t_file F2 ON F2.file_group_seq = C.mobile_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+        LEFT JOIN
+            t_code TC on TC.code = C.popup_type and IFNULL(TC.is_deleted, 'N') = 'N'
+
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY C.seq DESC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <select id="countByFilter" parameterType="map" resultType="long">
+        SELECT count(1)
+        FROM t_popup C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="content">
+        INSERT INTO t_popup (
+            subject,
+            content,
+            popup_type,
+            start_date,
+            end_date,
+            link_url,
+            image_desc,
+            position_x,
+            position_y,
+            width,
+            height,
+            link_yn,
+            window_yn,
+            sort_no,
+            created_date,
+            created_by,
+            is_deleted,
+            pc_file_group_seq,
+			mobile_file_group_seq,
+			use_yn
+		) VALUES (
+            #{subject,   jdbcType=VARCHAR},
+            #{content,   jdbcType=VARCHAR},
+            #{popupType, jdbcType=VARCHAR},
+            #{startDate, jdbcType=VARCHAR},
+            #{endDate,   jdbcType=VARCHAR},
+            #{linkUrl,   jdbcType=VARCHAR},
+            #{imageDesc, jdbcType=VARCHAR},
+            #{positionX, jdbcType=VARCHAR},
+            #{positionY, jdbcType=VARCHAR},
+            #{width, 	 jdbcType=VARCHAR},
+            #{height, 	 jdbcType=VARCHAR},
+            #{linkYn, 	 jdbcType=VARCHAR},
+            #{windowYn,  jdbcType=VARCHAR},
+            #{sortNo,  jdbcType=VARCHAR},
+            #{createdDate, jdbcType=VARCHAR},
+            #{createdBy, jdbcType=VARCHAR},
+            'N',
+            #{pcFileGroupSeq},
+			#{mobileFileGroupSeq},
+			#{useYn}
+		)
+    </insert>
+
+    <insert id="insertByBulk" parameterType="java.util.Map">
+
+    </insert>
+
+    <update id="update">
+        UPDATE t_popup
+        SET
+        <if test="subject != null">
+            subject = #{subject, jdbcType = VARCHAR},
+        </if>
+        <if test="content != null">
+            content = #{content, jdbcType = VARCHAR},
+        </if>
+        <if test="popupType != null">
+            popup_type = #{popupType, jdbcType = VARCHAR},
+        </if>
+        <if test="startDate != null">
+            start_date = #{startDate, jdbcType = VARCHAR},
+        </if>
+        <if test="endDate != null">
+            end_date = #{endDate, jdbcType = VARCHAR},
+        </if>
+        <if test="sortNo != null">
+            sort_no = #{sortNo, jdbcType = VARCHAR},
+        </if>
+        <if test="linkUrl != null">
+            link_url = #{linkUrl, jdbcType = VARCHAR},
+        </if>
+        <if test="imageDesc != null">
+            image_desc = #{imageDesc, jdbcType = VARCHAR},
+        </if>
+        <if test="positionX != null">
+            position_x = #{positionX, jdbcType=INTEGER},
+        </if>
+        <if test="positionY != null">
+            position_y = #{positionY, jdbcType=INTEGER},
+        </if>
+        <if test="width != null">
+            width = #{width, jdbcType=INTEGER},
+        </if>
+        <if test="height != null">
+            height = #{height, jdbcType=INTEGER},
+        </if>
+        <if test="linkYn != null">
+            link_yn = #{linkYn, jdbcType = VARCHAR},
+        </if>
+        <if test="windowYn != null">
+            window_yn = #{windowYn, jdbcType = VARCHAR},
+        </if>
+        <if test="modifiedBy != null">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="pcFileGroupSeq != null">
+			pc_file_group_seq = #{pcFileGroupSeq, jdbcType=VARCHAR},
+		</if>
+		<if test="mobileFileGroupSeq != null">
+			mobile_file_group_seq = #{mobileFileGroupSeq, jdbcType=VARCHAR},
+		</if>
+		<if test="useYn != null">
+			use_yn = #{useYn},
+		</if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="deleteById">
+		UPDATE t_popup
+		SET	IS_DELETED = 'Y'
+		WHERE seq = #{seq, jdbcType=VARCHAR}
+	</update>
+    
+</mapper>

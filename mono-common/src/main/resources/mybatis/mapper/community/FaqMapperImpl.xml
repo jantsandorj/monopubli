@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.community.service.FaqMapper">
+
+    <resultMap id="baseResultMap" type="faq">
+        <id property="seq"              column="seq"/>
+        <result property="question"     column="question"/>
+        <result property="answer"       column="answer"/>
+        <result property="categoryCd"   column="category_cd"/>
+        <result property="exposureYn"   column="exposure_yn"/>
+        <result property="createdDate"  column="created_date"/>
+        <result property="createdBy"    column="created_by"/>
+        <result property="createdIp"    column="created_ip"/>
+        <result property="modifiedDate" column="modified_date"/>
+        <result property="modifiedBy"   column="modified_by"/>
+        <result property="modifiedIp"   column="modified_ip"/>
+        <result property="isDeleted"    column="is_deleted"/>
+        <result property="fileGroupSeq" column="file_group_seq"/>
+        <result property="viewCnt"          column="view_cnt"/>
+    </resultMap>
+    
+    <resultMap id="nestedResultMap" type="faq" extends="baseResultMap">
+		<collection property="attachments" columnPrefix="ATCH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+	</resultMap>
+
+    <sql id="whereQuery">
+        F.is_deleted = 'N'
+        <if test='useYn != null and useYn != ""'>
+            AND F.exposure_yn = #{useYn}
+        </if>
+        <if test="searchWrd != null and searchWrd != ''">
+            AND LOWER(F.question) LIKE CONCAT('%', LOWER(#{searchWrd,jdbcType=VARCHAR}), '%')
+        </if>
+    </sql>
+
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT F.*, DATE_FORMAT(F.created_date, '%Y-%m-%d') AS FORMATTED_CREATE_DATE
+        FROM t_faq F
+        <where>
+            <include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY F.seq DESC
+            </otherwise>
+        </choose>
+    </select>
+    
+    <select id="countByFilter" parameterType="java.util.Map" resultType="long">
+		SELECT 
+			COUNT(seq)
+		FROM 
+			t_faq F
+		<where>
+			<include refid="whereQuery"/>
+		</where>	
+	</select>
+
+    <select id="getBySeq" parameterType="int" resultMap="nestedResultMap">
+        SELECT F.*,
+        	A.file_seq AS ATCH_file_id, 
+			A.file_group_seq AS ATCH_file_grp_id, 
+			A.file_name AS ATCH_file_nm, 
+			A.file_ext AS ATCH_file_ext, 
+			A.file_size AS ATCH_file_size, 
+			A.created_date AS ATCH_create_dt, 
+			A.stored_file_name AS ATCH_stored_nm, 
+			A.view_url AS ATCH_url, 
+			A.stored_path AS ATCH_stored_path, 
+			A.download_url AS ATCH_download_url, 
+			A.delete_url AS ATCH_delete_url, 
+			A.is_deleted AS ATCH_is_deleted
+        FROM 
+        	t_faq F
+        LEFT JOIN 
+			t_file A ON F.file_group_seq = A.file_group_seq AND IFNULL(A.is_deleted, 'N') = 'N'	
+        WHERE F.is_deleted = 'N'
+        AND F.seq = #{seq,jdbcType=INTEGER}
+    </select>
+
+    <update id="update" parameterType="faq">
+        UPDATE t_faq
+        SET
+        <if test="question != null and question != ''">
+            question = #{question,jdbcType=VARCHAR},
+        </if>
+        <if test="answer != null and answer != ''">
+            answer = #{answer,jdbcType=VARCHAR},
+        </if>
+        <if test="categoryCd != null and categoryCd != ''">
+            category_cd = #{categoryCd,jdbcType=VARCHAR},
+        </if>
+        <if test="fileGroupSeq != null and fileGroupSeq != ''">
+            file_group_seq = #{fileGroupSeq,jdbcType=INTEGER},
+        </if>
+<!--        <if test="exposureYn != null and exposureYn != ''">-->
+<!--            exposure_yn = #{exposureYn,jdbcType=VARCHAR},-->
+<!--        </if>-->
+        <if test="modifiedBy != null and modifiedBy != ''">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedIp != null and modifiedIp != ''">
+            modified_ip = #{modifiedIp,jdbcType=VARCHAR},
+        </if>
+        modified_date = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i')
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+    <insert id="insert" parameterType="faq">
+        INSERT INTO t_faq (
+            question,
+            answer,
+            category_cd,
+            file_group_seq,
+            exposure_yn,
+            created_date,
+            created_by,
+            created_ip
+        ) VALUES (
+            #{question,jdbcType=VARCHAR},
+            #{answer,jdbcType=VARCHAR},
+            #{categoryCd,jdbcType=VARCHAR},
+            #{fileGroupSeq,jdbcType=INTEGER},
+            #{exposureYn,jdbcType=VARCHAR},
+            DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i'),
+            #{createdBy,jdbcType=VARCHAR},
+            #{createdIp,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="deleteByBulk">
+        UPDATE t_faq
+        SET is_deleted = 'Y'
+        WHERE seq IN (
+            <foreach collection="ids" item="id" separator=",">
+                #{id}
+            </foreach>
+        )
+    </update>
+
+    <update id="deleteById" parameterType="int">
+        UPDATE t_faq
+        SET is_deleted = 'Y'
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+</mapper>

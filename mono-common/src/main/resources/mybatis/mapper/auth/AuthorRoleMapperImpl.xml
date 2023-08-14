@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.auth.service.AuthorRoleMapper">
+	<resultMap 	id="authorRoleMap" type="authorRole"	extends="commonMapper.generalMap">
+		<result property="menuSeq" 			column="menu_seq"/>
+		<result property="authorCd" 		column="author_cd"/>
+	</resultMap>
+	
+	<insert id="insert">
+		INSERT INTO	t_author_role
+		(   menu_seq,
+			author_cd,
+			created_by,
+			created_date
+		) values(
+			#{menuSeq},
+			#{authorCd},
+			#{createdBy},
+			DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+		)
+	</insert>
+
+	<update id="deleteById" parameterType="authorRole">
+		DELETE FROM t_author_role
+		WHERE author_cd = #{authorCd,jdbcType=VARCHAR}
+	</update>
+
+</mapper>

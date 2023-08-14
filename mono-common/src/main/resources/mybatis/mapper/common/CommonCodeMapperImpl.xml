@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.code.service.CommonCodeMapper">
+
+	<resultMap id="baseResultMap" 		    type="commonCode">
+		<id property="id" 					column="id" />
+		<result property="cd" 				column="cd" />
+		<result property="desc" 			column="code_desc" />
+		<result property="name" 			column="code_name" />
+		<result property="value" 			column="code_value" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		A.is_deleted = 'N'  
+    	<if test="keyword != null and keyword != ''">
+   			AND (
+   				A.division LIKE CONCAT('%',#{keyword},'%')
+   				OR A.detail LIKE CONCAT('%',#{keyword},'%')
+   			)
+   		</if>
+   		<if test="detail != null and detail != ''">
+   			AND A.detail LIKE CONCAT('%',#{detail},'%')
+   		</if>
+   		<if test="code1 != null and code1 != ''">
+   			AND A.code1 LIKE CONCAT('%',#{param.code1},'%')
+   		</if>
+   		<if test="value1 != null and value1 != ''">
+   			AND A.value1 LIKE CONCAT('%',#{param.value1},'%')
+   		</if>
+   		<if test="division != null and division != ''">
+   			<foreach collection="division.split(',')" item="divisionItem" index="index" separator=" OR " open="AND ( " close=" )">
+               	A.division LIKE CONCAT('%',#{divisionItem},'%')
+           	</foreach>
+   		</if>
+    </sql>
+    
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_common_code A
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY A.division ASC,  A.order_no ASC	
+        <if test="size != null and size != ''">
+        LIMIT #{page.size} OFFSET #{page.offset}
+        </if>
+    </select>
+
+    <select id="getBySeqArr" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_common_code A
+        WHERE
+        A.is_deleted = 'N'
+        AND A.id IN
+        <if test="_parameter != null and _parameter != ''">
+            <foreach collection="_parameter.split(',')" item="param" index="index" separator="," open="(" close=")">
+                #{param}
+            </foreach>
+        </if>
+        ORDER BY A.division ASC,  A.order_no ASC
+    </select>
+    
+    <select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_common_code A 
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY A.division ASC,  A.order_no ASC		
+    </select>
+    
+    <select id="getListByDivision" parameterType="java.lang.String" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_common_code A 
+ 		WHERE 
+ 			A.is_deleted = 'N'  
+ 			AND A.division = #{_parameter}
+ 		ORDER BY A.division ASC,  A.order_no ASC
+    </select>
+    
+    <select id="countByFilter" parameterType="java.util.Map" resultType="long">
+        SELECT count(id)
+        FROM t_common_code A
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+    
+    <select id="getByCode" parameterType="string" resultMap="baseResultMap">
+        SELECT A.*
+        FROM t_common_code A
+		WHERE A.code1 = #{code}
+    </select>
+    
+</mapper>

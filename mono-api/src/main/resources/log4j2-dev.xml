@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout
+                pattern="%style{%d{ISO8601}}{black} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{1.}}{bright,yellow}: %msg%n%throwable" />
+        </Console>
+ 
+        <RollingFile name="RollingFile"
+            fileName="/data/tagocms-logs/tagocms-api.log"
+            filePattern="/data/tagocms-logs/$${date:yyyy-MM}/tagocms-api-%d{-dd-MMMM-yyyy}-%i.log.gz">
+            <PatternLayout>
+                <pattern>%d %p %C{1.} [%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- rollover on startup, daily and when the file reaches 
+                    10 MegaBytes -->
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy
+                    size="50 MB" />
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+        </RollingFile>
+    </Appenders>
+ 
+    <Loggers>
+    	<Logger name="kr.co.tagoplus" level="INFO" />
+    	<Logger name="org.springframework" level="INFO" />
+ 		<Logger name="com.zaxxer.hikari.HikariConfig" level="ERROR" additivity="false">
+			<AppenderRef ref="Console" />
+		</Logger>
+        <Logger name="log4jdbc.log4j2" level="INFO" additivity="false">
+			<MarkerFilter marker="LOG4JDBC_JDBC" onMatch="DENY" onMismatch="NEUTRAL"/>
+		  	<AppenderRef ref="Console"/>
+		</Logger>
+        
+        <!-- LOG everything at INFO level -->
+        <Root level="INFO">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="RollingFile" />
+        </Root>
+    </Loggers>
+ 
+</configuration>

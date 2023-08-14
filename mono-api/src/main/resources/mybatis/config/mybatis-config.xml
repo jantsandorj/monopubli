@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <settings>
+        <setting name="cacheEnabled" value="false"/>
+        <setting name="defaultStatementTimeout" value="3000"/>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <setting name="jdbcTypeForNull" value="NULL" />
+    </settings>
+    
+    <typeAliases>
+		<typeAlias alias="map" 				type="java.util.Map" />
+		<typeAlias alias="long" 			type="java.lang.Long" />
+		<typeAlias alias="int" 				type="java.lang.Integer" />
+		<typeAlias alias="generalMap" 		type="kr.co.tagoplus.common.model.GeneralVO" />
+
+		<typeAlias alias="menu" 			type="kr.co.tagoplus.auth.entity.Menu" />
+		<typeAlias alias="user" 			type="kr.co.tagoplus.auth.entity.User" />
+		<typeAlias alias="code" 			type="kr.co.tagoplus.code.entity.Code" />
+		<typeAlias alias="fileGroup"		type="kr.co.tagoplus.file.entity.FileGroup" />
+		<typeAlias alias="fileDetail"		type="kr.co.tagoplus.file.entity.FileDetail" />
+        <typeAlias alias="qna"              type="kr.co.tagoplus.community.entity.Qna" />
+        <typeAlias alias="faq"              type="kr.co.tagoplus.community.entity.Faq"/>
+        <typeAlias alias="notice"           type="kr.co.tagoplus.community.entity.Notice"/>
+        <typeAlias alias="board" 	        type="kr.co.tagoplus.community.entity.Board" />
+        <typeAlias alias="admin"            type="kr.co.tagoplus.auth.entity.Admin"/>
+        <typeAlias alias="projectPayment"   type="kr.co.tagoplus.project.entity.ProjectPayment"/>
+
+        <typeAlias alias="mailHistory" 		type="kr.co.tagoplus.notification.entity.MailHistory" />
+        <typeAlias alias="mailTemplate" 	type="kr.co.tagoplus.notification.entity.MailTemplate" />
+
+        <typeAlias alias="siteInfo" 	    type="kr.co.tagoplus.settings.entity.SiteInfo" />
+        <typeAlias alias="skill" 	        type="kr.co.tagoplus.settings.entity.Skill" />
+        <typeAlias alias="systemSettings" 	type="kr.co.tagoplus.settings.entity.SystemSettings" />
+
+    </typeAliases>
+</configuration>

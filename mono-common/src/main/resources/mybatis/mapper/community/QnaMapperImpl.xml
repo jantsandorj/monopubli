@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.community.service.QnaMapper">
+
+    <resultMap id="baseResultMap" type="qna" extends="commonMapper.generalMap">
+        <id     property="seq"                  column="seq" />
+        <result property="username"             column="username" />
+        <result property="title"                column="title" />
+        <result property="content"              column="content" />
+        <result property="answer"               column="answer" />
+        <result property="answerUsername"       column="answer_username" />
+        <result property="isSecret"             column="is_secret"/>
+        <result property="isAnswered"           column="is_answered" />
+        <result property="viewCount"            column="view_count"/>
+        <result property="fileGroupSeq"         column="file_group_seq"/>
+        <result property="answerFileGroupSeq"   column="answer_file_group_seq"/>
+        <result property="createdDate"          column="created_date" />
+        <result property="createdBy"            column="created_by" />
+        <result property="modifiedDate"         column="modified_date" />
+        <result property="modifiedBy"           column="modified_by" />
+        <result property="isDeleted"            column="is_deleted" />
+    </resultMap>
+
+    <resultMap id="nestedDetailMap" type="qna" extends="baseResultMap">
+        <association property="attach" columnPrefix="ATTACH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+        <association property="atchAnswer" columnPrefix="ATCH_" resultMap="kr.co.tagoplus.file.service.FileMapper.fileDetailMap" />
+    </resultMap>
+
+    <sql id="whereQuery">
+        Q.is_deleted = 'N'
+        <if test="seq != null and seq != ''">
+            AND Q.seq = #{seq,jdbcType=INTEGER}
+        </if>
+        <if test='isAnswered != null and isAnswered != ""'>
+            AND Q.is_Answered = #{isAnswered}
+        </if>
+        <if test="searchWrd != null and searchWrd != ''">
+            AND LOWER(Q.title) LIKE CONCAT('%', LOWER(#{searchWrd,jdbcType=VARCHAR}), '%')
+        </if>
+    </sql>
+
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT Q.*
+        FROM t_qna Q
+        <where>
+            <include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY Q.seq DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="getLatestQnas" resultMap="baseResultMap">
+        SELECT Q.*
+        FROM t_qna Q
+        WHERE Q.is_deleted = 'N'
+        ORDER BY Q.seq DESC
+		LIMIT  0, 5
+    </select>
+
+<!--    ,-->
+<!--    F.file_seq          AS ATTACH_file_seq,-->
+<!--    F.file_group_seq    AS ATTACH_file_group_seq,-->
+<!--    F.order_number      AS ATTACH_order_number,-->
+<!--    F.stored_file_name  AS ATTACH_stored_file_name,-->
+<!--    F.file_ext          AS ATTACH_file_ext,-->
+<!--    F.file_size         AS ATTACH_file_size,-->
+<!--    F.stored_path       AS ATTACH_stored_path,-->
+<!--    F.view_url          AS ATTACH_view_url,-->
+<!--    F.download_url      AS ATTACH_download_url,-->
+<!--    F.delete_url        AS ATTACH_delete_url,-->
+<!--    F.created_date      AS ATTACH_created_date,-->
+<!--    F.created_by        AS ATTACH_created_by,-->
+<!--    F.modified_date     AS ATTACH_modified_date,-->
+<!--    F.modified_by       AS ATTACH_modified_by,-->
+<!--    F.is_deleted        AS ATTACH_is_deleted-->
+
+<!--    LEFT JOIN t_file F-->
+<!--        ON F.file_group_seq = Q.file_group_seq-->
+<!--        AND F.is_deleted = 'N'-->
+<!--    LEFT JOIN t_file F-->
+<!--        ON F.file_group_seq = Q.answer_file_group_seq-->
+<!--        AND F.is_deleted = 'N'-->
+
+    <select id="getBySeq" parameterType="int" resultMap="nestedDetailMap">
+        SELECT Q.*,
+        	F.file_seq AS ATTACH_file_seq, 
+			F.file_group_seq AS ATTACH_file_grp_id, 
+			F.file_name AS ATTACH_file_nm, 
+			F.file_ext AS ATTACH_file_ext, 
+			F.file_size AS ATTACH_file_size, 
+			F.created_date AS ATTACH_create_dt, 
+			F.stored_file_name AS ATTACH_stored_nm, 
+			F.view_url AS ATTACH_url, 
+			F.stored_path AS ATTACH_stored_path, 
+			F.download_url AS ATTACH_download_url, 
+			F.delete_url AS ATTACH_delete_url, 
+			F.is_deleted AS ATTACH_is_deleted,
+			F2.file_seq AS ATCH_file_seq, 
+			F2.file_group_seq AS ATCH_file_grp_id, 
+			F2.file_name AS ATCH_file_nm, 
+			F2.file_ext AS ATCH_file_ext, 
+			F2.file_size AS ATCH_file_size, 
+			F2.created_date AS ATCH_create_dt, 
+			F2.stored_file_name AS ATCH_stored_nm, 
+			F2.view_url AS ATCH_url, 
+			F2.stored_path AS ATCH_stored_path, 
+			F2.download_url AS ATCH_download_url, 
+			F2.delete_url AS ATCH_delete_url, 
+			F2.is_deleted AS ATCH_is_deleted
+        FROM 
+        	t_qna Q
+        LEFT JOIN 
+			t_file F ON F.file_group_seq = Q.file_group_seq AND IFNULL(F.is_deleted, 'N') = 'N'
+		LEFT JOIN 
+			t_file F2 ON F2.file_group_seq = Q.answer_file_group_seq AND IFNULL(F2.is_deleted, 'N') = 'N'
+        WHERE Q.is_deleted = 'N'
+        AND Q.seq = #{seq,jdbcType=INTEGER}
+    </select>
+
+    <update id="update" parameterType="qna">
+        UPDATE t_qna
+        SET
+        <if test="title != null and title != ''">
+            title = #{title,jdbcType=VARCHAR},
+        </if>
+        <if test="content != null and content != ''">
+            content = #{content,jdbcType=VARCHAR},
+        </if>
+        <if test="answer != null and answer != ''">
+            answer = #{answer,jdbcType=VARCHAR},
+        </if>
+        <if test="answerUsername != null and answerUsername != ''">
+            answer_username = #{answerUsername,jdbcType=VARCHAR},
+        </if>
+        <if test="isSecret != null and isSecret != ''">
+            is_secret = #{isSecret,jdbcType=VARCHAR},
+        </if>
+        <if test="isAnswered != null and isAnswered != ''">
+            is_answered = #{isAnswered,jdbcType=VARCHAR},
+        </if>
+        <if test="fileGroupSeq != null and fileGroupSeq > 0">
+            file_group_seq = #{fileGroupSeq,jdbcType=INTEGER},
+        </if>
+        <if test="answerFileGroupSeq != null and answerFileGroupSeq > 0">
+            answer_file_group_seq = #{answerFileGroupSeq,jdbcType=INTEGER},
+        </if>
+        <if test="modifiedBy != null and modifiedBy != ''">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        modified_date = DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i')
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+    <update id="updateViewCount" parameterType="int">
+        UPDATE t_qna
+        SET view_count = view_count + 1
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="seq" parameterType="qna">
+        INSERT INTO t_qna
+        (
+            username,
+            title,
+            content,
+            is_secret,
+            is_answered,
+            file_group_seq,
+            answer_file_group_seq,
+            created_date,
+            created_by,
+            is_deleted
+        ) VALUES (
+            #{username,jdbcType=VARCHAR},
+            #{title,jdbcType=VARCHAR},
+            #{content,jdbcType=VARCHAR},
+            #{isSecret,jdbcType=VARCHAR},
+            #{isAnswered,jdbcType=VARCHAR},
+            #{fileGroupSeq,jdbcType=INTEGER},
+            #{answerFileGroupSeq,jdbcType=INTEGER},
+            DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i'),
+            #{createdBy,jdbcType=VARCHAR},
+            #{isDeleted,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="deleteByBulk">
+        UPDATE t_qna
+        SET is_deleted = 'Y'
+        WHERE seq IN (
+            <foreach collection="ids" item="id" separator=",">
+                #{id}
+            </foreach>
+        )
+    </update>
+
+    <update id="deleteBySeq" parameterType="int">
+        UPDATE t_qna
+        SET is_deleted = 'Y'
+        WHERE seq = #{seq,jdbcType=INTEGER}
+    </update>
+
+</mapper>

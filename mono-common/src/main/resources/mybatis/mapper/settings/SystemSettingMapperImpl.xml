@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.settings.service.SystemSettingsMapper">
+
+	<resultMap id="baseResultMap" 		        type="systemSettings" >
+        <id property="siteSeq"                      column="siteSeq" />
+        <result property="adminSessionTimeYn"       column="admin_session_time_yn" />
+        <result property="adminSessionTime"         column="admin_session_time" />
+        <result property="adminPasschangeCycleYn"   column="admin_passchange_cycle_yn" />
+        <result property="adminPasschangeCycle"     column="admin_passchange_cycle" />
+        <result property="adminAccessIpYn"          column="admin_access_ip_yn" />
+        <result property="adminAccessIp"            column="admin_access_ip" />
+        <result property="userSessionTimeYn"        column="user_session_time_yn" />
+        <result property="userSessionTime"          column="user_session_time" />
+        <result property="userPasschangeCycleYn"    column="user_passchange_cycle_yn" />
+        <result property="userPasschangeCycle"      column="user_passchange_cycle" />
+        <result property="modifiedDate"             column="modified_date" />
+        <result property="modifiedBy"               column="modified_by" />
+        <result property="googleYn"                 column="google_yn" />
+        <result property="googleAccToken"           column="google_acc_token" />
+        <result property="facebookYn"               column="facebook_yn" />
+        <result property="facebookAccToken"         column="facebook_acc_token" />
+        <result property="naverYn"                  column="naver_yn" />
+        <result property="naverAccToken"            column="naver_acc_token" />
+        <result property="kakaoYn"                  column="kakao_yn" />
+        <result property="kakaoAccToken"            column="kakao_acc_token" />
+	</resultMap>
+
+    <select id="getSystemSettings" resultMap="baseResultMap">
+        SELECT A.*
+        FROM
+        	t_system_settings A
+        WHERE A.site_seq = '1'
+    </select>
+
+    <update id="update">
+        UPDATE t_system_settings
+        SET
+        <if test='adminSessionTimeYn != null and adminSessionTimeYn != ""'>
+            admin_session_time_yn = #{adminSessionTimeYn,jdbcType=VARCHAR},
+        </if>
+        <if test='adminSessionTime != null'>
+            admin_session_time = #{adminSessionTime,jdbcType=INTEGER},
+        </if>
+        <if test='adminPasschangeCycleYn != null and adminPasschangeCycleYn != ""'>
+            admin_passchange_cycle_yn = #{adminPasschangeCycleYn,jdbcType=VARCHAR},
+        </if>
+        <if test='adminPasschangeCycle != null'>
+            admin_passchange_cycle = #{adminPasschangeCycle,jdbcType=INTEGER},
+        </if>
+        <if test='adminAccessIpYn != null and adminAccessIpYn != ""'>
+            admin_access_ip_yn = #{adminAccessIpYn,jdbcType=VARCHAR},
+        </if>
+        <if test='adminAccessIp != null'>
+            admin_access_ip = #{adminAccessIp,jdbcType=VARCHAR},
+        </if>
+        <if test='userSessionTimeYn != null and userSessionTimeYn != ""'>
+            user_session_time_yn = #{userSessionTimeYn,jdbcType=VARCHAR},
+        </if>
+        <if test='userSessionTime != null'>
+            user_session_time = #{userSessionTime,jdbcType=INTEGER},
+        </if>
+        <if test='userPasschangeCycleYn != null and userPasschangeCycleYn != ""'>
+            user_passchange_cycle_yn = #{userPasschangeCycleYn,jdbcType=VARCHAR},
+        </if>
+        <if test='userPasschangeCycle != null'>
+            user_passchange_cycle = #{userPasschangeCycle,jdbcType=INTEGER},
+        </if>
+        <if test='modifiedDate != null and modifiedDate != ""'>
+            modified_date = #{modifiedDate,jdbcType=VARCHAR},
+        </if>
+        <if test='modifiedBy != null and modifiedBy != ""'>
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test='googleYn != null and googleYn != ""'>
+            google_yn = #{googleYn,jdbcType=VARCHAR},
+        </if>
+        <if test='googleAccToken != null'>
+            google_acc_token = #{googleAccToken,jdbcType=VARCHAR},
+        </if>
+        <if test='facebookYn != null and facebookYn != ""'>
+            facebook_yn = #{facebookYn,jdbcType=VARCHAR},
+        </if>
+        <if test='facebookAccToken != null'>
+            facebook_acc_token = #{facebookAccToken,jdbcType=VARCHAR},
+        </if>
+        <if test='naverYn != null and naverYn != ""'>
+            naver_yn = #{naverYn,jdbcType=VARCHAR},
+        </if>
+        <if test='naverAccToken != null'>
+            naver_acc_token = #{naverAccToken,jdbcType=VARCHAR},
+        </if>
+        <if test='kakaoYn != null and kakaoYn != ""'>
+            kakao_yn = #{kakaoYn,jdbcType=VARCHAR},
+        </if>
+        <if test='kakaoAccToken != null'>
+            kakao_acc_token = #{kakaoAccToken,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE site_seq = '1'
+    </update>
+    
+</mapper>

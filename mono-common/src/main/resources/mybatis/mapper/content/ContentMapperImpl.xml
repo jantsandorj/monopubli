@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.content.service.ContentMapper">
+
+	<resultMap id="baseResultMap" 		        type="content" extends="commonMapper.generalMap">
+		<id property="seq" 				    	column="seq" />
+        <result property="csCode"               column="cs_code" />
+        <result property="title"                column="title" />
+        <result property="subject"              column="subject" />
+        <result property="contentJson"          column="content_json" />
+        <result property="statusCd"             column="status_cd" />
+        <result property="viewCnt"             column="view_cnt" />
+        <result property="isDeleted"     	    column="is_deleted" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		C.is_deleted = 'N'
+    	<if test="csCode != null and csCode != ''">
+   			AND LOWER(C.cs_code) = LOWER(#{csCode})
+        </if>
+        <if test="searchWrd != null and searchWrd != ''">
+            AND LOWER(title->"$.*") LIKE CONCAT('%',#{searchWrd},'%')
+        </if>
+        <if test="excludedSeq != null and excludedSeq != ''">
+            --  used when need to check except of self
+            AND	seq <![CDATA[<>]]> #{excludedSeq}
+        </if>
+    </sql>
+
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT C.*
+        FROM t_content C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY C.seq ASC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT C.*
+        FROM t_content C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY C.seq ASC
+    </select>
+
+    <select id="getById" resultMap="baseResultMap">
+        SELECT *
+        FROM t_content
+        WHERE seq = #{seq}
+    </select>
+
+    <select id="countByFilter" parameterType="map" resultType="long">
+        SELECT count(1)
+        FROM t_content C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="content">
+        INSERT INTO t_content (
+            cs_code,
+            title,
+            subject,
+            content_json,
+            status_cd,
+            created_by,
+            created_ip,
+            created_date
+		) VALUES (
+            #{csCode, jdbcType=VARCHAR},
+            #{title, jdbcType=VARCHAR},
+            #{subject, jdbcType=VARCHAR},
+            #{contentJson, jdbcType=VARCHAR},
+            #{statusCd, jdbcType=VARCHAR},
+			#{createdBy, jdbcType=VARCHAR},
+			#{createdIp, jdbcType=VARCHAR},
+			#{createdDate, jdbcType=VARCHAR}
+		)
+    </insert>
+
+    <insert id="insertByBulk" parameterType="java.util.Map">
+
+    </insert>
+
+    <update id="update">
+        UPDATE t_content
+        SET
+        <if test="title != null">
+            title = #{title},
+        </if>
+        <if test="subject != null">
+            subject = #{subject},
+        </if>
+        <if test="contentJson != null">
+            content_json = #{contentJson},
+        </if>
+        <if test="statusCd != null">
+            status_cd = #{statusCd},
+        </if>
+        <if test="modifiedBy != null">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        <if test="modifiedIp != null">
+            modified_ip = #{modifiedIp,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="deleteById" parameterType="String">
+		UPDATE t_content
+		SET	IS_DELETED = 'Y'
+		WHERE seq = #{seq}
+	</update>
+    
+</mapper>

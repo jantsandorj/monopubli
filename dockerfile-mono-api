@@ -1,0 +1,25 @@
+FROM maven:3.8.4-jdk-11 AS build
+LABEL stage=builder
+ENV HOME=/project
+RUN mkdir -p $HOME
+RUN mkdir $HOME/mono-api
+RUN mkdir $HOME/mono-common
+
+COPY pom.xml $HOME
+COPY mono-api/pom.xml $HOME/mono-api
+COPY mono-common/pom.xml $HOME/mono-common
+
+WORKDIR $HOME
+RUN mvn dependency:go-offline -B
+
+COPY . /project
+RUN mvn --projects mono-api --also-make clean package -Pstaging -DskipTests
+#RUN mvn --projects mono-common migration:up '-Dmigration.env=staging'
+
+FROM openjdk:11.0.13-slim
+ENV TZ=Asia/Seoul
+RUN mkdir /app
+COPY --from=build /project/mono-api/target/mono-api.jar /app/app.jar
+
+WORKDIR /app
+CMD "java" "-jar" "app.jar"

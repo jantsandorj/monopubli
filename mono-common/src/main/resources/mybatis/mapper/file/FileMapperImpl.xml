@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.file.service.FileMapper">
+
+	<resultMap id="fileDetailMap" 		type="fileDetail">
+		<id property="fileSeq" 			column="file_seq" />
+		<result property="fileGrpId" 	column="file_grp_id" />
+		<result property="subSeq" 		column="sub_seq" />
+		<result property="fileNm" 		column="file_nm" />
+		<result property="storedNm" 	column="stored_nm" />
+		<result property="fileExt" 		column="file_ext" />
+		<result property="fileSize" 	column="file_size" />
+		<result property="downCnt" 		column="down_cnt" />
+		<result property="createDt" 	column="create_dt" />
+		<result property="url" 			column="url" />
+		<result property="storedPath"	column="stored_path" />
+		<result property="downloadUrl" 	column="download_url" />
+		<result property="deleteUrl" 	column="delete_url" />
+		<result property="isDeleted" 	column="is_deleted" />
+	</resultMap>
+	
+	<resultMap id="fileGroupMap" 		type="fileGroup">
+		<id property="fileGrpId" 		column="file_grp_id" />
+		<result property="createDt" 	column="create_dt" />
+		
+		<collection property="files" columnPrefix="ATTACH_" resultMap="fileDetailMap" />
+	</resultMap>
+	
+    <select id="getSimpleById" resultMap="fileDetailMap">
+        SELECT * 
+        FROM t_file A
+        WHERE A.is_deleted = 'N'
+        	AND A.file_id = #{fileId} 
+    </select>
+    
+    <select id="getById" resultType="fileDetail">
+        SELECT *
+        FROM t_file 
+        WHERE is_deleted = 'N'
+        	AND file_seq = #{fileSeq}
+    </select>
+    
+    <select id="getByUrl" resultMap="fileDetailMap">
+        SELECT * 
+        FROM t_file 
+        WHERE is_deleted = 'N'
+        	AND view_url = #{url}
+        LIMIT 1
+    </select>
+    
+    <select id="getByGroupId" resultMap="fileDetailMap">
+        SELECT *
+        FROM t_file 
+        WHERE IFNULL(is_deleted, 'N') = 'N'
+        	AND file_group_seq = #{fileGrpId}
+    </select>
+    
+    <insert id="insert" parameterType="fileDetail" useGeneratedKeys="true" keyProperty="fileSeq" keyColumn="file_seq">
+    	INSERT INTO t_file (
+    		file_group_seq, 
+    		order_number, 
+    		file_name, 
+    		file_ext, 
+    		file_size, 
+    		created_date, 
+    		stored_file_name, 
+    		view_url, 
+    		stored_path, 
+    		download_url, 
+    		delete_url
+    	) 
+    	SELECT
+    		#{fileGrpId}, 
+    		MAX(order_number) + 1, 
+    		#{fileNm}, 
+    		#{fileExt},
+    		#{fileSize}, 
+    		#{createDt},
+    		#{storedNm}, 
+    		#{url}, 
+    		#{storedPath}, 
+    		#{downloadUrl},
+    		#{deleteUrl}
+		FROM t_file
+		WHERE file_group_seq = #{fileGrpId}
+    </insert>
+    
+    <update id="update" parameterType="board">
+		UPDATE t_file
+		<set>
+			<if test="downloadUrl != null">
+				download_url = #{downloadUrl, jdbcType=VARCHAR},
+			</if>
+			<if test="deleteUrl != null">
+				delete_url = #{deleteUrl, jdbcType=VARCHAR},
+			</if>
+		</set>
+		WHERE file_seq = #{fileSeq}			
+    		AND is_deleted = 'N'
+	</update>
+	
+    <update id="updateDownCnt">
+    	UPDATE t_file
+    	SET down_cnt = down_cnt + 1
+    	WHERE file_seq = #{fileSeq} 
+    		AND is_deleted = 'N'
+    </update>
+    
+    <update id="deleteById">
+    	UPDATE t_file
+    	SET is_deleted = 'Y'
+    	WHERE file_seq = #{fileSeq}
+    </update>
+    
+    <insert id="createFileGroup" useGeneratedKeys="true" keyProperty="fileGrpId" keyColumn="file_grp_id">
+    	INSERT INTO t_file_group (
+    		created_date
+    	) VALUES(
+    		#{createDt}
+    	)
+    </insert>
+    
+    <select id="getFileGroupById" resultMap="fileGroupMap">
+    	SELECT 
+    		FG.file_grp_id,
+    		FG.create_dt,
+    		F.file_id AS ATTACH_file_id, 
+    		F.file_grp_id AS ATTACH_file_grp_id, 
+    		F.sub_seq AS ATTACH_sub_seq, 
+    		F.file_nm AS ATTACH_file_nm, 
+    		F.file_ext AS ATTACH_file_ext, 
+    		F.file_size AS ATTACH_file_size, 
+    		F.down_cnt AS ATTACH_down_cnt, 
+    		F.create_dt AS ATTACH_create_dt, 
+    		F.stored_nm AS ATTACH_stored_nm, 
+    		F.url AS ATTACH_url, 
+    		F.stored_path AS ATTACH_stored_path, 
+    		F.download_url AS ATTACH_download_url, 
+    		F.delete_url AS ATTACH_delete_url, 
+    		F.is_deleted AS ATTACH_is_deleted
+    	FROM t_file_group FG
+    	INNER JOIN t_file F
+    		ON F.file_grp_id = FG.file_grp_id
+    		AND F.is_deleted = 'N'
+    	WHERE F.file_grp_id = #{fileGroupId}
+    </select>
+    
+</mapper>

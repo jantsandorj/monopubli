@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.auth.service.MenuContentMapper">
+
+	<resultMap id="baseResultMap" 		        type="menuContent" extends="commonMapper.generalMap">
+		<id property="seq" 				    	column="seq" />
+        <result property="menuId"               column="menu_id" />
+        <result property="content"              column="content" />
+        <result property="isDeleted"     	    column="is_deleted" />
+        <result property="useYn"  		   	    column="use_yn" />
+        <result property="fileGroupSeq"  		column="file_group_seq" />
+        <result property="menuName" 	 		column="menu_name" />
+	</resultMap>
+    
+    <sql id="whereQuery">
+   		C.is_deleted = 'N'
+        <if test="searchWrd != null and searchWrd != ''">
+            AND (C.menu_id LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%') OR M.menu_name LIKE CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%'))
+        </if>
+        <if test="useYn != null and useYn != ''">
+			AND IFNULL(C.use_yn, 'Y') = #{useYn}
+		</if>
+    </sql>
+
+    <select id="getByFilter" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT C.*, M.menu_name
+        FROM 
+        	t_menu_content C
+        LEFT JOIN
+        	t_menu M ON C.menu_id = M.menu_id AND IFNULL(M.is_deleted, 'N') = 'N'
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        <choose>
+            <when test="page.sort.sorted == true">
+                ORDER BY
+                <foreach collection="page.sort.orders" item="sortOrder" separator=",">
+                    ${sortOrder.property} ${sortOrder.direction.name}
+                </foreach>
+            </when>
+            <otherwise>
+                ORDER BY C.seq DESC
+            </otherwise>
+        </choose>
+        <include refid="commonMapper.pagingQuery" />
+    </select>
+
+    <select id="getList" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT C.*
+        FROM t_menu_content C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+        ORDER BY C.seq ASC
+    </select>
+
+    <select id="getById" resultMap="baseResultMap">
+        SELECT C.*, M.menu_name
+        FROM 
+        	t_menu_content C
+        LEFT JOIN
+        	t_menu M ON C.menu_id = M.menu_id AND IFNULL(M.is_deleted, 'N') = 'N'
+        WHERE C.seq = #{seq}
+    </select>
+    
+    <select id="getByMenuId" resultMap="baseResultMap">
+        SELECT C.*
+        FROM 
+        	t_menu_content C
+        WHERE IFNULL(C.is_deleted, 'N') = 'N' AND C.menu_id = #{menuId}
+    </select>
+
+    <select id="countByFilter" parameterType="map" resultType="long">
+        SELECT count(1)
+        FROM t_menu_content C
+        <where>
+        	<include refid="whereQuery" />
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="menuContent">
+        INSERT INTO t_menu_content (
+            menu_id,
+            content,
+            is_deleted,
+            use_yn,
+            file_group_seq,
+            created_by,
+            created_date
+		) VALUES (
+            #{menuId, jdbcType=VARCHAR},
+            #{content, jdbcType=VARCHAR},
+            'N',
+            #{useYn, jdbcType=VARCHAR},
+            #{fileGroupSeq, jdbcType=INTEGER},
+			#{createdBy, jdbcType=VARCHAR},
+			DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:%i:%s')
+		)
+    </insert>
+
+    <insert id="insertByBulk" parameterType="java.util.Map">
+
+    </insert>
+
+    <update id="update">
+        UPDATE t_menu_content
+        SET
+        <if test='useYn != null and useYn != ""'>
+            use_yn = #{useYn},
+        </if>
+        <if test='content != null and content != ""'>
+            content = #{content},
+        </if>
+        <if test='fileGroupSeq != null and fileGroupSeq != ""'>
+            file_group_seq = #{fileGroupSeq},
+        </if>
+        <if test="modifiedBy != null">
+            modified_by = #{modifiedBy,jdbcType=VARCHAR},
+        </if>
+        modified_date = #{modifiedDate,jdbcType=VARCHAR}
+        WHERE seq = #{seq}
+    </update>
+
+    <update id="deleteById" parameterType="String">
+		UPDATE t_menu_content
+		SET	IS_DELETED = 'Y'
+		WHERE seq = #{seq}
+	</update>
+    
+</mapper>

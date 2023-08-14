@@ -1,0 +1,51 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# dependencies
+mono-web/node_modules
+mono-manager/node_modules
+mono-manager/.cache
+mono-manager/.package-lock.json
+
+mono-egov/node_modules
+mono-egov/.cache
+mono-egov/.package-lock.json
+
+# react js build
+/build
+/node_modules
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+/.metadata
+.fake
+
+/mono-egov/package-lock.json

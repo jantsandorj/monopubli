@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.tagoplus.common.service.IdGnrMapper">
+
+    <select id="getIdIndex" resultType="long">
+    	SELECT id_index
+    	FROM t_ids
+    	WHERE table_name = #{tableName}
+    </select>
+       
+    <update id="incrementIdIndex">
+    	UPDATE t_ids
+    	SET id_index = id_index + 1
+    	WHERE table_name = #{tableName}
+    </update>
+</mapper>

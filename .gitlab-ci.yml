@@ -1,0 +1,68 @@
+stages:
+    - staging
+
+web-staging:
+    image: docker:latest
+    stage: staging
+    before_script:
+        - cd mono-web
+    services:
+        - docker:dind
+    script:
+        - ls -lah
+        - docker build -f dockerfile-mono-web -t mono-web .
+        - docker stop mono-web &> /dev/null || true
+        - docker rm -f mono-web &> /dev/null || true
+        - docker run -d -p 5581:5581 --rm --name mono-web -v /data/monopublishing-staging:/data/monopublishing-staging mono-web
+    rules:
+        -   if: '$CI_COMMIT_BRANCH == "main"'
+            changes:
+                - mono-web/**/*
+            exists:
+                - mono-web/dockerfile-mono-web
+    tags:
+        - staging
+
+manager-staging:
+    image: docker:latest
+    stage: staging
+    before_script:
+        - cd mono-manager
+    services:
+        - docker:dind
+    script:
+        - docker build -f dockerfile-mono-manager -t mono-manager .
+        - docker image prune --filter label=stage=builder
+        - docker stop mono-manager &> /dev/null || true
+        - docker rm -f mono-manager &> /dev/null || true
+        - docker run --restart always -d -p 5600:5600 --name mono-manager -v /data/monopublishing-staging:/data/monopublishing-staging -v /data/monopublishing-logs:/data/monopublishing-logs mono-manager
+    rules:
+        -   if: '$CI_COMMIT_BRANCH == "main"'
+            changes:
+                - mono-manager/**/*
+            exists:
+                - mono-manager/dockerfile-mono-manager
+    tags:
+        - staging
+
+api-staging:
+    image: docker:latest
+    stage: staging
+    services:
+        - docker:dind
+    script:
+        - docker build -f dockerfile-mono-api -t mono-api .
+        - docker image prune --filter label=stage=builder
+        - docker stop mono-api &> /dev/null || true
+        - docker rm -f mono-api &> /dev/null || true
+        - docker run --restart always -d -p 5556:5556 --name mono-api -v /data/monopublishing-staging:/data/monopublishing-staging -v /data/monopublishing-logs:/data/monopublishing-logs mono-api
+    rules:
+        -   if: '$CI_COMMIT_BRANCH == "main"'
+            changes:
+                - mono-api/**/*
+                - mono-common/**/*
+                - dockerfile-mono-api
+            exists:
+                - dockerfile-mono-api
+    tags:
+        - staging

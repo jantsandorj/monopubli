@@ -1,0 +1,67 @@
+{
+    "name": "mono-web",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "@emotion/react": "^11.10.6",
+        "@emotion/styled": "^11.10.6",
+        "@hookform/resolvers": "^3.1.0",
+        "@mui/icons-material": "^5.11.16",
+        "@mui/lab": "^5.0.0-alpha.88",
+        "@mui/material": "^5.12.2",
+        "@mui/x-date-pickers": "^5.0.20",
+        "@testing-library/jest-dom": "^5.17.0",
+        "@testing-library/react": "^13.4.0",
+        "@testing-library/user-event": "^13.5.0",
+        "@reduxjs/toolkit": "^1.9.2",
+        "react": "^18.2.0",
+        "framer-motion": "^8.1.5",
+        "formik": "^2.2.9",
+        "react-dom": "^18.2.0",
+        "react-redux": "^8.0.2",
+        "react-router": "6.6.1",
+        "react-router-dom": "6.6.1",
+        "react-scripts": "^5.0.1",
+        "react-data-table-component": "^7.5.3",
+        "web-vitals": "^2.1.4",
+        "sass": "^1.62.1",
+        "dayjs": "^1.11.7",
+        "yup": "^0.32.11"
+    },
+    "scripts": {
+        "start": "cross-env PORT=5581 react-scripts start",
+        "start-legacy": "react-scripts --openssl-legacy-provider",
+        "build": "react-scripts build .env.production",
+        "build:dev": "react-scripts build .env.development",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "eslintConfig": {
+        "extends": [
+            "react-app"
+        ],
+        "rules": {
+            "no-unused-vars": "off",
+            "react-hooks/exhaustive-deps": "off",
+            "eqeqeq": "off",
+            "default-case": "off",
+            "no-dupe-keys": "off"
+        }
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "views": "^0.0.0"
+    }
+}

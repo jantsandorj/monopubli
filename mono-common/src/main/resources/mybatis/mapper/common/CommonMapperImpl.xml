@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="commonMapper">
+
+	<resultMap id="generalMap" 		    type="generalVO">
+		<result property="createDt"			column="create_dt" />
+    	<result property="createId"			column="create_id" />
+    	<result property="createIp"			column="create_ip" />
+    	<result property="modifiedDate"			column="modify_dt" />
+    	<result property="modifiedBy"			column="modify_id" />
+    	<result property="modifyIp"			column="modify_ip" />
+    	<result property="isDeleted"		column="is_deleted" />
+	</resultMap>
+    
+    <sql id="selectQuery">
+    </sql>
+    
+    <sql id="whereQuery">
+    	<if test="entity != null">
+    		IS_DELETED = 'N'
+    	</if>
+    </sql>
+    
+    <sql id="pagingQuery">
+    	<if test="page != null">
+    		LIMIT #{page.size} OFFSET #{page.offset}
+    	</if>
+    </sql>
+    
+    <select id="getAll">
+    	<include refid="selectQuery" />
+    </select>
+    
+    <select id="getByIdList"></select>
+    <select id="getByFilter" parameterType="map">
+    	<include refid="selectQuery" />
+    	<where>
+    		<include refid="whereQuery" />
+    	</where>
+    	<include refid="pagingQuery" />
+    </select>
+    
+    <select id="countByFilter" parameterType="map">
+    	<!-- countQuery -->
+    	<where>
+    		<include refid="whereQuery" />
+    	</where>
+    </select>
+    
+    <select id="getById">
+    	<include refid="selectQuery" />
+    	<where>
+    		<include refid="whereQuery" />
+    		<!-- AND byId -->
+    	</where>
+    </select>
+    <select id="existById" resultType="boolean">
+    	<!-- countQuery > 0 -->
+    	<where>
+    		<include refid="whereQuery" />
+    	</where>
+    </select>
+    
+    <insert id="insert"></insert>
+    <insert id="insertWithId"></insert>
+    <insert id="insertByBulk"></insert>
+    
+    <update id="update"></update>
+    <update id="updateViewCount"></update>
+    
+    <delete id="deleteById"></delete>
+    <delete id="deleteByIdAndCreateId"></delete>
+    <delete id="delete"></delete>
+    <delete id="deleteByBulk"></delete>
+</mapper>
